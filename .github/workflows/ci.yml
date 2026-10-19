@@ -51,6 +51,8 @@ jobs:
         with:
           args: >-
             --no-progress
+            --fallback-extensions html
+            --index-files index.html
             --exclude 'linkedin\.com'
             --exclude 'mail\.google\.com'
             --exclude '^mailto:'
