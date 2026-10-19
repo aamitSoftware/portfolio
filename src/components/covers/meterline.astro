@@ -1,0 +1,23 @@
+---
+import Diagram from '../Diagram.astro';
+---
+
+<Diagram
+  title="Meterline data flow"
+  desc="A SaaS app sends usage events to Meterline's ingest API and asks the limit check whether a customer may use more. Events land in a Postgres ledger, and a worker pushes usage to Stripe meters and reads Stripe webhooks."
+  nodes={[
+    { id: 'app', x: 40, y: 330, w: 230, h: 140, label: 'Your SaaS', sub: 'app servers' },
+    { id: 'ingest', x: 360, y: 110, w: 290, h: 130, label: 'Ingest API', sub: 'dedupe by event id', accent: 'y' },
+    { id: 'check', x: 360, y: 560, w: 290, h: 130, label: 'Limit check', sub: 'Redis Lua, a few ms' },
+    { id: 'ledger', x: 740, y: 110, w: 290, h: 130, label: 'Postgres ledger', sub: 'events, windows, outbox' },
+    { id: 'worker', x: 740, y: 560, w: 290, h: 130, label: 'Worker', sub: 'SKIP LOCKED jobs' },
+    { id: 'stripe', x: 1080, y: 330, w: 170, h: 140, label: 'Stripe', sub: 'meters' },
+  ]}
+  edges={[
+    { from: 'app', to: 'ingest', label: 'usage events' },
+    { from: 'app', to: 'check', label: 'can she use 5k more?' },
+    { from: 'ingest', to: 'ledger', label: 'exactly once' },
+    { from: 'ledger', to: 'worker', label: 'outbox' },
+    { from: 'worker', to: 'stripe', label: 'usage + webhooks', both: true },
+  ]}
+/>

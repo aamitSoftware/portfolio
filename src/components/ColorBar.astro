@@ -1,0 +1,73 @@
+---
+/**
+ * The colour-control strip printed along a press sheet's edge: solids, tints,
+ * and two- and three-plate overprints. The overprints are real blends of the
+ * plates, so the strip shows the subtractive (Print) or additive (Screen) mix.
+ */
+type Patch = { plates: Array<'c' | 'm' | 'y'>; tint?: number; key?: boolean };
+
+const patches: Patch[] = [
+  { plates: ['c'] },
+  { plates: ['m'] },
+  { plates: ['y'] },
+  { plates: [], key: true },
+  { plates: ['c', 'm'] },
+  { plates: ['m', 'y'] },
+  { plates: ['c', 'y'] },
+  { plates: ['c', 'm', 'y'] },
+  { plates: ['c'], tint: 50 },
+  { plates: ['m'], tint: 50 },
+  { plates: ['y'], tint: 50 },
+  { plates: [], key: true, tint: 50 },
+  { plates: ['c'], tint: 25 },
+  { plates: ['m'], tint: 25 },
+  { plates: ['y'], tint: 25 },
+  { plates: [], key: true, tint: 25 },
+];
+---
+
+<div class="colorbar" aria-hidden="true">
+  {
+    patches.map((p) => (
+      <span class="patch">
+        {p.key && <span class="ink" style={`background: var(--ink); opacity: ${(p.tint ?? 100) / 100}`} />}
+        {p.plates.map((pl) => (
+          <span class="ink" style={`background: var(--plate-${pl}); opacity: ${(p.tint ?? 100) / 100}`} />
+        ))}
+      </span>
+    ))
+  }
+</div>
+
+<style>
+  .colorbar {
+    display: flex;
+    gap: 0;
+    height: 0.75rem;
+    isolation: isolate;
+  }
+
+  .patch {
+    position: relative;
+    width: 1.25rem;
+    height: 100%;
+    background: var(--paper);
+    isolation: isolate;
+  }
+
+  .patch + .patch {
+    border-left: 1px solid var(--paper);
+  }
+
+  .ink {
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: var(--blend);
+  }
+
+  @media (max-width: 40rem) {
+    .patch:nth-child(n + 9) {
+      display: none;
+    }
+  }
+</style>

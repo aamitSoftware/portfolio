@@ -1,0 +1,32 @@
+---
+import Sheet from '../layouts/Sheet.astro';
+import Plates from '../components/Plates.astro';
+---
+
+<Sheet title="Page not found" description="This page doesn't exist." noindex>
+  <div class="lost">
+    <Plates as="h1" lines={['404']} inRegister={false} drift={0.06} class="code" />
+    <p class="msg">This page never made it to press. The link may be old, or the address mistyped.</p>
+    <p><a class="btn-ink" href="/">Go to the home page</a></p>
+  </div>
+</Sheet>
+
+<style>
+  .lost {
+    padding-block: clamp(2rem, 8vw, 6rem);
+  }
+
+  :global(.code) {
+    margin: 0;
+    font-size: clamp(6rem, 26vw, 15rem);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.85;
+  }
+
+  .msg {
+    max-width: 40ch;
+    margin: 2rem 0 1.75rem;
+    font-size: 1.25rem;
+  }
+</style>

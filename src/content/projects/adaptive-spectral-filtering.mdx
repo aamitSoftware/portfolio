@@ -1,0 +1,62 @@
+---
+title: Adaptive Spectral Filtering
+summary: Do graph-adaptive Bernstein filters beat fixed ones? A strict test.
+description: Fixed vs graph-adaptive Bernstein spectral filters in GNNs, tested on ZINC, molbace and molesol. A BGU Learning on Graphs research project.
+status: research
+year: 2026
+role: Co-author
+team: With Roei Yosef, BGU Learning on Graphs course
+stack:
+  - Python
+  - PyTorch, PyTorch Geometric
+  - OGB datasets
+  - Weights & Biases sweeps
+  - SLURM
+links:
+  repo: https://github.com/aamitSoftware/Adaptive-Spectral-Filtering--LOG-Final-Project
+featured: true
+order: 4
+ink: m
+coverCaption: "The Bernstein basis (K = 10) the filters are built from. The weights on each band are what the adaptive model learns per graph."
+tagline: "Do graph-adaptive filters help? A fair test."
+features:
+  - title: "Matched starting point"
+    body: "Both models start as the exact same all-pass filter, so any adaptivity has to be learned."
+  - title: "Equal search budgets"
+    body: "Identical hyperparameter grids and budgets for the baseline and the adaptive model."
+  - title: "Five-seed results"
+    body: "The chosen configs are retrained from scratch on five seeds before anything is reported."
+  - title: "Three benchmarks"
+    body: "ZINC, ogbg-molbace and ogbg-molesol: regression and classification on molecular graphs."
+---
+
+## The question
+
+Polynomial spectral GNNs like BernNet learn one set of Bernstein filter coefficients and share it across every graph in a dataset. We asked whether making those coefficients a function of each input graph actually helps, and set out to answer it with a comparison strict enough to trust.
+
+## What we built
+
+Two models that drive the identical Bernstein operator inside a GINE backbone. They differ only in where the coefficients come from:
+
+- **Fixed (baseline):** one learned coefficient vector, shared by every graph.
+- **Adaptive:** a small MLP reads a multi-scale diffusion signature of the graph and outputs one coefficient vector per graph.
+
+## Making the comparison fair
+
+The part I'm proudest of is the matched initialisation. The adaptive controller's last layer starts at zero weights with a bias chosen so it outputs all ones, which is exactly the all-pass filter the fixed model also starts from. At step 0 the two models are numerically identical. Any adaptivity the model shows, it had to learn.
+
+<Flow
+  label="Experiment protocol"
+  steps={[
+    'Same grids: both models searched over identical spaces, equal budgets',
+    'Bayesian search: W&B sweeps on validation metrics',
+    'Re-train: the chosen config, from scratch, on 5 seeds',
+    'Report: test metric frozen at the best validation epoch',
+  ]}
+/>
+
+The test split is never used for any decision. Runs went through SLURM on BGU's cluster, since one ZINC seed takes two to three and a half hours.
+
+## Results
+
+Results and analysis are in the project report, linked from the repository. The course grade was 92.

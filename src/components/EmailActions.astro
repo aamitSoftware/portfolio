@@ -1,0 +1,138 @@
+---
+/**
+ * "Email me" opens Gmail compose with the subject and a starter note already written.
+ * Copy is there for people on Outlook or anything else; the small link uses their default mail app.
+ */
+import { site } from '../lib/site';
+import { gmailUrl, mailtoUrl } from '../lib/contact';
+
+interface Props {
+  subject?: string;
+  label?: string;
+  /** 'key' is a black button for use on a coloured plate. */
+  tone?: 'ink' | 'key' | 'inverse';
+  showAddress?: boolean;
+}
+
+const {
+  subject = 'Hi Amit, saw your portfolio',
+  label = 'Email me',
+  tone = 'ink',
+  showAddress = true,
+} = Astro.props;
+---
+
+<div class:list={['email', `tone-${tone}`]}>
+  <a class="send" href={gmailUrl(subject)} target="_blank" rel="noopener">
+    {label}
+    <span class="sr-only">(opens Gmail in a new tab)</span>
+  </a>
+  <button type="button" class="copy" data-copy={site.email} data-done="Copied">
+    Copy email
+  </button>
+  {
+    showAddress && (
+      <span class="addr">
+        or <a href={mailtoUrl(subject)}>{site.email}</a>
+      </span>
+    )
+  }
+</div>
+
+<script is:inline>
+  (() => {
+    for (const btn of document.querySelectorAll('.copy[data-copy]:not([data-wired])')) {
+      btn.dataset.wired = '1';
+      const original = btn.textContent;
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.copy);
+          btn.textContent = btn.dataset.done;
+        } catch {
+          btn.textContent = btn.dataset.copy;
+        }
+        setTimeout(() => (btn.textContent = original), 1800);
+      });
+    }
+  })();
+</script>
+
+<style>
+  .email {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+
+  .send,
+  .copy {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    border-radius: 2px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .tone-ink .send {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .tone-ink .copy {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+
+  .tone-key .send {
+    background: #000;
+    color: var(--panel, #fff);
+  }
+
+  .tone-key .copy {
+    background: transparent;
+    color: #000;
+    border: 1px solid #000;
+  }
+
+  .tone-inverse .send {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .tone-inverse .copy {
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--paper);
+  }
+
+  .tone-inverse .addr,
+  .tone-inverse .addr a {
+    color: var(--paper);
+  }
+
+  .send:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .copy:hover {
+    background: color-mix(in oklab, currentColor 8%, transparent);
+  }
+
+  .addr {
+    color: var(--meta);
+    font-size: 0.9375rem;
+  }
+
+  .tone-key .addr,
+  .tone-key .addr a {
+    color: #000;
+  }
+</style>

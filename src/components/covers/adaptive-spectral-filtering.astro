@@ -1,0 +1,90 @@
+---
+/**
+ * The Bernstein basis the project's filters are built from, B_k(λ) for K = 10 on λ in [0, 2],
+ * plus one filter made from it. The basis is exact; the filter's coefficients are illustrative.
+ */
+const K = 10;
+const W = 1280;
+const H = 800;
+const pad = { l: 110, r: 60, t: 70, b: 120 };
+const plotW = W - pad.l - pad.r;
+const plotH = H - pad.t - pad.b;
+const choose = (n: number, k: number) => {
+  let r = 1;
+  for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i;
+  return r;
+};
+const B = (k: number, lam: number) => choose(K, k) * (lam / 2) ** k * (1 - lam / 2) ** (K - k);
+const theta = [0.15, 0.2, 0.35, 0.7, 1.0, 0.95, 0.6, 0.3, 0.2, 0.3, 0.45];
+const steps = 200;
+const xs = Array.from({ length: steps + 1 }, (_, i) => (2 * i) / steps);
+const px = (lam: number) => pad.l + (lam / 2) * plotW;
+const py = (v: number) => pad.t + plotH - v * plotH;
+const path = (f: (lam: number) => number) =>
+  xs.map((lam, i) => `${i ? 'L' : 'M'}${px(lam).toFixed(1)} ${py(f(lam)).toFixed(1)}`).join(' ');
+const basis = Array.from({ length: K + 1 }, (_, k) => path((lam) => B(k, lam)));
+const filter = path((lam) => theta.reduce((s, t, k) => s + t * B(k, lam), 0));
+---
+
+<svg class="plot" viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="bern-t bern-d">
+  <title id="bern-t">Bernstein basis, K = 10</title>
+  <desc id="bern-d">
+    Eleven Bernstein basis curves across the graph spectrum from 0 to 2. Each peaks at its own frequency band, from
+    low-pass on the left to high-pass on the right. A thicker curve shows one filter built as a weighted sum of them,
+    with illustrative weights. The adaptive model predicts those weights for each graph.
+  </desc>
+  <line x1={pad.l} y1={py(0)} x2={W - pad.r} y2={py(0)} class="axis" />
+  <line x1={pad.l} y1={pad.t} x2={pad.l} y2={py(0)} class="axis" />
+  {[0, 0.5, 1].map((v) => <text x={pad.l - 18} y={py(v) + 7} class="tick" text-anchor="end">{v}</text>)}
+  {[0, 0.5, 1, 1.5, 2].map((v) => <text x={px(v)} y={py(0) + 36} class="tick" text-anchor="middle">{v}</text>)}
+  <text x={pad.l} y={H - 28} class="cap">low frequency</text>
+  <text x={W - pad.r} y={H - 28} class="cap" text-anchor="end">high frequency</text>
+  <text x={(pad.l + W - pad.r) / 2} y={H - 28} class="cap" text-anchor="middle">eigenvalue λ</text>
+  {basis.map((d) => <path d={d} class="basis" />)}
+  <path d={filter} class="filter plate" style="stroke: var(--plate-m)" transform="translate(-5 4)" />
+  <path d={filter} class="filter" />
+  <text x={px(1.02)} y={py(0.98)} class="flabel">one filter, a weighted sum</text>
+  <text x={px(1.02)} y={py(0.98) + 30} class="fsub">weights predicted per graph (here illustrative)</text>
+</svg>
+
+<style>
+  .plot {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--paper);
+    font-family: var(--font-sans);
+  }
+  .axis {
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .tick,
+  .cap {
+    fill: var(--meta);
+    font-size: 22px;
+  }
+  .basis {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    opacity: 0.55;
+  }
+  .filter {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 5;
+  }
+  .filter.plate {
+    mix-blend-mode: var(--blend);
+  }
+  .flabel {
+    fill: var(--ink);
+    font-size: 28px;
+    font-weight: 750;
+  }
+  .fsub {
+    fill: var(--meta);
+    font-size: 21px;
+  }
+</style>

@@ -1,0 +1,271 @@
+@import "tailwindcss";
+@import "@fontsource-variable/archivo/standard.css";
+
+/*
+  Press proof tokens.
+  Print mode is coated stock under process inks, mixed subtractively (multiply).
+  Screen mode is the press room at night: the same plates as R, G and B light, mixed additively (screen).
+*/
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bed: #d7dad6;
+  --paper: #f5f6f4;
+  --ink: #000000;
+  --meta: #55595e;
+  --rule: #c4c8c4;
+  --wash: #e9ebe8;
+  --plate-c: #00a0e3;
+  --plate-m: #e5007d;
+  --plate-y: #ffe600;
+  --blend: multiply;
+  --sheet-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 12px 32px -8px rgb(0 0 0 / 0.18);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bed: #090c0f;
+  --paper: #12171c;
+  --ink: #f5f6f4;
+  --meta: #9aa1a8;
+  --rule: #2c333a;
+  --wash: #1a2026;
+  --plate-c: #ff2a2a;
+  --plate-m: #00e05a;
+  --plate-y: #2f5bff;
+  --blend: screen;
+  --sheet-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 16px 40px -8px rgb(0 0 0 / 0.7);
+}
+
+/* No-JS fallback: follow the OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bed: #090c0f;
+    --paper: #12171c;
+    --ink: #f5f6f4;
+    --meta: #9aa1a8;
+    --rule: #2c333a;
+    --wash: #1a2026;
+    --plate-c: #ff2a2a;
+    --plate-m: #00e05a;
+    --plate-y: #2f5bff;
+    --blend: screen;
+  }
+}
+
+/*
+  Process-ink solids for project panels. A printed plate stays the same colour whatever the room light,
+  so these do not switch in Screen mode. Key text on all three passes AA.
+*/
+:root {
+  --proc-c: #00a0e3;
+  --proc-m: #e5007d;
+  --proc-y: #ffe600;
+  --proc-key: #000000;
+}
+
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-meta: var(--meta);
+  --color-rule: var(--rule);
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    scrollbar-color: var(--meta) var(--bed);
+    scroll-padding-top: 2rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    min-height: 100dvh;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    font-stretch: 100%;
+  }
+
+  ::selection {
+    background: var(--plate-y);
+    color: #000;
+  }
+
+  :root[data-theme="dark"] ::selection {
+    background: var(--plate-y);
+    color: #fff;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--plate-m);
+  }
+
+  a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: var(--meta);
+  }
+
+  a:hover {
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 2px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    line-height: 1.1;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  table,
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+  }
+}
+
+@layer components {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* The one filled control on the sheet: a solid key-ink block. */
+  .btn-ink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 600;
+    font-stretch: 100%;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: background-color 160ms ease-out;
+  }
+
+  .btn-ink:hover {
+    background: color-mix(in oklab, var(--ink) 82%, var(--plate-c));
+    text-decoration: none;
+  }
+
+  .measure {
+    max-width: 65ch;
+  }
+
+  /* Case-study prose. */
+  .prose-sheet > * + * {
+    margin-top: 1em;
+  }
+
+  .prose-sheet h2 {
+    margin-top: 2.5em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-stretch: 112%;
+  }
+
+  .prose-sheet h2 + * {
+    margin-top: 0.75em;
+  }
+
+  .prose-sheet h3 {
+    margin-top: 1.75em;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .prose-sheet ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .prose-sheet ul > li {
+    position: relative;
+    padding-left: 1.25em;
+  }
+
+  .prose-sheet ul > li + li {
+    margin-top: 0.4em;
+  }
+
+  .prose-sheet ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.15em;
+    top: 0.72em;
+    width: 0.55em;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  .prose-sheet strong {
+    font-weight: 650;
+  }
+
+  .prose-sheet code {
+    padding: 0.05em 0.3em;
+    background: var(--wash);
+    border-radius: 2px;
+  }
+
+  .prose-sheet pre {
+    padding: 1rem 1.25rem;
+    background: var(--wash);
+    border-left: 1px solid var(--rule);
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+
+  .prose-sheet pre code {
+    padding: 0;
+    background: none;
+  }
+}

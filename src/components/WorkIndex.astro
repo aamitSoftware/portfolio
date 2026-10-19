@@ -1,0 +1,135 @@
+---
+import RegMark from './RegMark.astro';
+import Cover from './Cover.astro';
+import { isInRegister, statusLabel, type Project } from '../lib/projects';
+
+interface Props {
+  projects: Project[];
+}
+
+const { projects } = Astro.props;
+---
+
+<ol class="work" role="list">
+  {
+    projects.map((p, i) => (
+      <li class="item" style={`--row-ink: var(--plate-${p.data.ink})`}>
+        <a href={`/work/${p.id}`} class="item-link">
+          <div class="text">
+            <span class="title" style={`view-transition-name: title-${p.id}`}>
+              {p.data.title}
+            </span>
+            <span class="summary">{p.data.summary}</span>
+            <span class="meta">
+              <span class="status">
+                <RegMark size={16} inRegister={isInRegister(p.data.status)} />
+                {statusLabel[p.data.status]}
+              </span>
+              <span class="tnum">{p.data.year}</span>
+            </span>
+            <span class="stack">{p.data.stack.slice(0, 3).join(', ')}</span>
+            <span class="open" aria-hidden="true">Read the case study</span>
+          </div>
+          <div class="pic">
+            <Cover project={p} sizes="(min-width: 64rem) 640px, 92vw" eager={i === 0} showCaption={false} compact />
+          </div>
+        </a>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .work {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+  }
+
+  .item {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .item-link {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 1.5rem clamp(2rem, 5vw, 4.5rem);
+    align-items: start;
+    padding-block: clamp(2rem, 4vw, 3rem);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 800;
+    font-stretch: 118%;
+    line-height: 1.05;
+    width: fit-content;
+  }
+
+  .summary {
+    max-width: 34ch;
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 0.4rem;
+    font-size: 0.875rem;
+    font-stretch: 87.5%;
+    color: var(--meta);
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink);
+  }
+
+  .stack {
+    color: var(--meta);
+    font-size: 0.9375rem;
+  }
+
+  .open {
+    margin-top: 0.75rem;
+    width: fit-content;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: var(--meta);
+  }
+
+  .item-link:hover .title,
+  .item-link:hover .open {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.16em;
+    text-decoration-color: var(--row-ink);
+  }
+
+  @media (max-width: 52rem) {
+    .item-link {
+      grid-template-columns: 1fr;
+    }
+
+    .pic {
+      order: -1;
+
+    }
+  }
+</style>

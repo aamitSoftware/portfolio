@@ -1,0 +1,27 @@
+---
+import Diagram from '../Diagram.astro';
+---
+
+<Diagram
+  title="AgentGate architecture"
+  desc="An AI agent gets a token from Keycloak and calls tools through the AgentGate gateway, which forwards only granted calls to the MCP server. The gateway, Registry, Review and Hub services share state through RabbitMQ events."
+  nodes={[
+    { id: 'kc', x: 40, y: 60, w: 300, h: 120, label: 'Keycloak', sub: 'agent identity (OIDC)' },
+    { id: 'agent', x: 40, y: 290, w: 300, h: 130, label: 'AI agent', sub: 'MCP client' },
+    { id: 'gw', x: 470, y: 280, w: 330, h: 150, label: 'Gateway', sub: 'YARP, checks every grant', accent: 'm' },
+    { id: 'mcp', x: 940, y: 290, w: 300, h: 130, label: 'MCP server', sub: 'CRM, tickets, DB tools' },
+    { id: 'bus', x: 40, y: 540, w: 1200, h: 64, label: 'RabbitMQ events, outbox + inbox', dashed: true },
+    { id: 'reg', x: 40, y: 680, w: 360, h: 100, label: 'Registry', sub: 'pinned manifests, drift' },
+    { id: 'rev', x: 460, y: 680, w: 360, h: 100, label: 'Review', sub: 'risk scan, four-eyes' },
+    { id: 'hub', x: 880, y: 680, w: 360, h: 100, label: 'Hub', sub: 'audit, live activity' },
+  ]}
+  edges={[
+    { from: 'agent', to: 'kc', label: 'token' },
+    { from: 'agent', to: 'gw', label: 'tools/call' },
+    { from: 'gw', to: 'mcp', label: 'only if granted' },
+    { from: 'gw', to: 'bus', both: true },
+    { from: 'bus', to: 'reg', both: true },
+    { from: 'bus', to: 'rev', both: true },
+    { from: 'bus', to: 'hub' },
+  ]}
+/>

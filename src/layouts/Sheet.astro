@@ -1,0 +1,391 @@
+---
+import '../styles/global.css';
+import RegMark from '../components/RegMark.astro';
+import ColorBar from '../components/ColorBar.astro';
+import { site as meta } from '../lib/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Path of the generated OG image, without the extension. */
+  og?: string;
+  noindex?: boolean;
+}
+
+const { title, description = meta.description, og = 'index', noindex = false } = Astro.props;
+const fullTitle = title ? `${title} | ${meta.name}` : `${meta.name}, ${meta.role}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(`/og/${og}.png`, Astro.site);
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="theme-color" content="#f5f6f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12171c" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline>
+      (() => {
+        let t;
+        try {
+          t = localStorage.getItem('theme');
+        } catch {}
+        if (t !== 'light' && t !== 'dark') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="sheet">
+      <RegMark class="reg reg-top" size={22} />
+      <RegMark class="reg reg-bottom" size={22} />
+      <RegMark class="reg reg-left" size={22} />
+      <RegMark class="reg reg-right" size={22} />
+
+      <header class="slug slug-top">
+        <a href="/" class="wordmark">Amit Asher</a>
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#work">Work</a></li>
+            <li><a href="/#recruiters">For recruiters</a></li>
+            <li><a href="/#contact">Contact</a></li>
+          </ul>
+        </nav>
+        <button type="button" class="mode" aria-label="Switch to dark mode" title="Switch to dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" />
+            <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="trim">
+        <span class="crop crop-tl" aria-hidden="true"></span>
+        <span class="crop crop-tr" aria-hidden="true"></span>
+        <span class="crop crop-bl" aria-hidden="true"></span>
+        <span class="crop crop-br" aria-hidden="true"></span>
+        <main id="main">
+          <slot />
+        </main>
+      </div>
+
+      <footer class="slug slug-foot">
+        <ColorBar />
+        <p>&copy; {year} Amit Asher</p>
+        <ul class="foot-links">
+          <li><a href={meta.github}>GitHub</a></li>
+          <li><a href={meta.linkedin}>LinkedIn</a></li>
+          <li><a href="/#contact">Email</a></li>
+        </ul>
+      </footer>
+    </div>
+
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        const btn = document.querySelector('.mode');
+        const sync = () => {
+          const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          const label = `Switch to ${next} mode`;
+          btn.setAttribute('aria-label', label);
+          btn.title = label;
+        };
+        btn.addEventListener('click', () => {
+          root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          try {
+            localStorage.setItem('theme', root.dataset.theme);
+          } catch {}
+          sync();
+        });
+        sync();
+      })();
+    </script>
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 10;
+    padding: 0.5rem 0.875rem;
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+  }
+
+  .skip:focus {
+    top: 1rem;
+  }
+
+  /* The page is the press sheet, edge to edge. Content sits on a centred measure inside it. */
+  .sheet {
+    --gutter: clamp(1rem, 4vw, 3.5rem);
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100dvh;
+    padding: 0 var(--gutter);
+    background: var(--paper);
+  }
+
+  .sheet > header,
+  .sheet > .trim,
+  .sheet > footer {
+    width: 100%;
+    max-width: 76rem;
+    margin-inline: auto;
+  }
+
+  /* Slug areas: outside the trim, where a printer puts job info. */
+  .slug {
+    font-size: 0.875rem;
+    font-stretch: 87.5%;
+    color: var(--meta);
+  }
+
+  .slug-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    padding-block: 1.5rem 1.75rem;
+  }
+
+  .wordmark {
+    margin-right: auto;
+    color: var(--ink);
+    font-weight: 700;
+    font-stretch: 112%;
+    font-size: 1rem;
+    text-decoration: none;
+  }
+
+  .slug-top nav ul {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .slug-top nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .slug-top nav a:hover {
+    text-decoration: underline;
+  }
+
+  .mode {
+    display: inline-grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 160ms ease-out;
+  }
+
+  .mode:hover {
+    border-color: var(--ink);
+  }
+
+  .mode svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .mode .icon-moon {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  :global(:root[data-theme='dark']) .icon-moon,
+  :global(:root:not([data-theme='dark'])) .icon-sun {
+    display: none;
+  }
+
+  .slug-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+    padding-block: 1.75rem 2rem;
+  }
+
+  .slug-foot p {
+    margin: 0;
+  }
+
+  .foot-links {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0 0 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Trim box with crop marks just outside each corner. */
+  .trim {
+    position: relative;
+    padding: clamp(1.5rem, 5vw, 4.5rem) clamp(0rem, 3vw, 3rem);
+  }
+
+  .crop {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    pointer-events: none;
+  }
+
+  .crop::before,
+  .crop::after {
+    content: '';
+    position: absolute;
+    background: var(--ink);
+  }
+
+  .crop::before {
+    width: 100%;
+    height: 1px;
+  }
+
+  .crop::after {
+    width: 1px;
+    height: 100%;
+  }
+
+  .crop-tl {
+    left: -1.25rem;
+    top: -1.25rem;
+  }
+  .crop-tl::before {
+    bottom: 0;
+  }
+  .crop-tl::after {
+    right: 0;
+  }
+
+  .crop-tr {
+    right: -1.25rem;
+    top: -1.25rem;
+  }
+  .crop-tr::before {
+    bottom: 0;
+  }
+  .crop-tr::after {
+    left: 0;
+  }
+
+  .crop-bl {
+    left: -1.25rem;
+    bottom: -1.25rem;
+  }
+  .crop-bl::before {
+    top: 0;
+  }
+  .crop-bl::after {
+    right: 0;
+  }
+
+  .crop-br {
+    right: -1.25rem;
+    bottom: -1.25rem;
+  }
+  .crop-br::before {
+    top: 0;
+  }
+  .crop-br::after {
+    left: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .crop {
+      width: 0.625rem;
+      height: 0.625rem;
+    }
+    .crop-tl,
+    .crop-bl {
+      left: -0.75rem;
+    }
+    .crop-tr,
+    .crop-br {
+      right: -0.75rem;
+    }
+    .crop-tl,
+    .crop-tr {
+      top: -0.75rem;
+    }
+    .crop-bl,
+    .crop-br {
+      bottom: -0.75rem;
+    }
+  }
+
+  /* Registration targets at the sheet's edge midpoints. */
+  .sheet > :global(.reg) {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .sheet > :global(.reg-top) {
+    top: 0.5rem;
+    left: calc(50% - 11px);
+  }
+
+  .sheet > :global(.reg-bottom) {
+    bottom: 0.5rem;
+    left: calc(50% - 11px);
+  }
+
+  .sheet > :global(.reg-left) {
+    left: calc(var(--gutter) / 2 - 11px);
+    top: calc(50% - 11px);
+  }
+
+  .sheet > :global(.reg-right) {
+    right: calc(var(--gutter) / 2 - 11px);
+    top: calc(50% - 11px);
+  }
+
+  @media (max-width: 48rem) {
+    .sheet > :global(.reg-left),
+    .sheet > :global(.reg-right),
+    .sheet > :global(.reg-top) {
+      display: none;
+    }
+  }
+</style>

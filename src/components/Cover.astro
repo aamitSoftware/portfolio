@@ -1,0 +1,128 @@
+---
+/**
+ * A project's cover, printed on the project's own ink:
+ * its screenshot if the MDX has one, else the drawn diagram in ./covers/<id>.astro,
+ * else a "screens coming soon" plate, so a brand-new project still looks finished.
+ */
+import { Image } from 'astro:assets';
+import Plates from './Plates.astro';
+import type { Project } from '../lib/projects';
+
+interface Props {
+  project: Project;
+  sizes: string;
+  eager?: boolean;
+  showCaption?: boolean;
+  /** Smaller padding, for the home page list. */
+  compact?: boolean;
+}
+
+const { project, sizes, eager = false, showCaption = true, compact = false } = Astro.props;
+const diagrams = import.meta.glob<{ default: (props: object) => unknown }>('./covers/*.astro', { eager: true });
+const Diagram: ((props: object) => unknown) | undefined = diagrams[`./covers/${project.id}.astro`]?.default;
+const cover = project.data.cover;
+const hasDiagram = Diagram !== undefined;
+const caption = cover?.caption ?? (hasDiagram ? project.data.coverCaption : undefined);
+---
+
+<figure class:list={['cover', { compact }]} style={`--panel: var(--proc-${project.data.ink})`}>
+  <div class="panel">
+    {
+      cover ? (
+        <div class="print">
+          <Image
+            src={cover.src}
+            alt={cover.alt}
+            widths={[480, 800, 1280]}
+            sizes={sizes}
+            loading={eager ? 'eager' : 'lazy'}
+            fetchpriority={eager ? 'high' : 'auto'}
+          />
+        </div>
+      ) : hasDiagram && Diagram ? (
+        <div class="print">
+          <Diagram />
+        </div>
+      ) : (
+        <div class="soon">
+          <Plates lines={[project.data.title]} inRegister={false} drift={0.03} class="soon-title" />
+          <p>Screens coming soon</p>
+        </div>
+      )
+    }
+  </div>
+  {showCaption && caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .cover {
+    margin: 0;
+  }
+
+  .panel {
+    padding: clamp(1.25rem, 4.5vw, 3rem);
+    background: var(--panel);
+    color: var(--proc-key);
+  }
+
+  .compact .panel {
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+
+  .print {
+    background: #f5f6f4;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.18),
+      0 18px 36px -14px rgb(0 0 0 / 0.45);
+  }
+
+  .print :global(img),
+  .print :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Diagrams are printed on paper stock even in Screen mode, so force the light inks inside them. */
+  .print :global(svg),
+  .soon {
+    --paper: #f5f6f4;
+    --ink: #000000;
+    --meta: #55595e;
+    --plate-c: #00a0e3;
+    --plate-m: #e5007d;
+    --plate-y: #ffe600;
+    --blend: multiply;
+  }
+
+  .soon {
+    display: grid;
+    place-content: center;
+    gap: 0.75rem;
+    aspect-ratio: 16 / 10;
+    text-align: center;
+  }
+
+  .soon :global(.soon-title) {
+    margin-inline: auto;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 1;
+    --ink: #000;
+  }
+
+  .soon p {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  figcaption {
+    margin-top: 0.9rem;
+    color: var(--meta);
+    font-size: 0.875rem;
+    font-stretch: 87.5%;
+    line-height: 1.4;
+  }
+</style>

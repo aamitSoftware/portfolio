@@ -1,0 +1,80 @@
+---
+title: AgentGate
+summary: A governance control plane for AI agents' tool access over MCP.
+description: AgentGate puts approval, pinned tool manifests, per-agent grants and drift detection between AI agents and the MCP servers they call. Built in .NET 10.
+status: building
+year: 2026
+role: Solo project
+stack:
+  - .NET 10, ASP.NET Core
+  - YARP
+  - MassTransit, RabbitMQ
+  - gRPC
+  - Keycloak (OIDC)
+  - PostgreSQL
+  - .NET Aspire, OpenTelemetry
+featured: true
+order: 2
+ink: m
+coverCaption: "How it fits together: every tool call goes through the gateway, and services share state through events."
+tagline: "Every tool an AI agent can call, reviewed and enforced."
+features:
+  - title: "Pinned manifests"
+    body: "Approved tool lists are hashed, so a server that quietly changes its tools gets caught instead of trusted."
+  - title: "Four-eyes approval"
+    body: "Two people sign off before any agent gets access to a new tool."
+  - title: "An enforcing gateway"
+    body: "A YARP proxy checks the agent's grant on every single tools/call."
+  - title: "An audit you can read"
+    body: "A hub built from events shows who can call what, and who actually did."
+---
+
+## Problem
+
+AI agents increasingly act through MCP servers: CRM lookups, ticketing, databases. That opens two quiet failure modes:
+
+- A server that is trusted today can change its tool descriptions tomorrow. This is called a "rug pull", and the agent will happily follow the new instructions.
+- A prompt-injected agent can start calling tools it was never meant to use.
+
+Most teams have no inventory of which agent can call which tool, let alone a way to stop it.
+
+## What I'm building
+
+AgentGate puts a lifecycle around that access. Agents are treated as non-human identities, and every tool they can reach has been reviewed, pinned and granted.
+
+<Flow
+  label="AgentGate's lifecycle for an MCP server"
+  steps={[
+    'Discover: register the MCP server and read its tools',
+    'Risk-scan: flag dangerous tools and descriptions',
+    'Approve: four-eyes review, two people sign off',
+    'Pin: store a SHA-256 manifest of the approved tools',
+    'Enforce: the gateway checks grants on every tools/call',
+    'Detect: drift from the pinned manifest, or anomalous calls',
+    'Contain: quarantine the server or suspend the grant',
+  ]}
+  loopsTo={2}
+/>
+
+## How it's put together
+
+Four services, each owning its own data:
+
+- **Registry**: MCP servers, pinned tool manifests, agent identities, drift detection.
+- **Review**: risk scans, four-eyes approval, grants (agent × server × tools).
+- **Gateway**: a YARP proxy that answers `tools/list` from the pinned manifest and checks grants on `tools/call`.
+- **Hub**: a read model built only from events. It shows inventory, who can call what, an audit timeline and live activity.
+
+Services talk through events on RabbitMQ with a transactional outbox and inbox. There is exactly one synchronous gRPC call, used where a check has to be authoritative at the moment a state changes. Agents authenticate to Keycloak with client credentials.
+
+## Hard parts
+
+- **Where to be synchronous.** Events everywhere is clean until a decision has to be authoritative right now. I kept exactly one gRPC call for that case and left everything else asynchronous.
+- **Making drift cheap to detect.** Pinning a hash of the approved manifest turns "did this server change?" into a comparison instead of a diff.
+- **Rules enforced, not documented.** Architecture tests (NetArchTest) fail the build if the domain kernel picks up a framework dependency. Decisions like "one database engine and one endpoint style across services" are written down as ADRs.
+
+## Where it stands
+
+The repo foundation (building blocks, Aspire host, architecture tests, CI) and the enforcing gateway with a demo MCP server and agent are done. The registry with manifest pinning and drift-triggered quarantine is in progress. Then: review and grants, the Hub with a React console, and anomaly-based auto-suspend.
+
+The repo is private while I build. Happy to walk through it in an interview.

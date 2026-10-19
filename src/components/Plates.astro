@@ -1,0 +1,134 @@
+---
+/**
+ * Type printed as four process plates. C, M and Y overprint under a key (K) plate.
+ * In register the colour plates hide under key; out of register they fringe around it.
+ * The key plate exists because a C+M+Y overprint only reaches true black in sRGB;
+ * wide-gamut displays composite it to a muddy maroon.
+ * `register` animates the colour plates into register once, on first paint.
+ */
+interface Props {
+  lines: string[];
+  as?: 'h1' | 'p' | 'div';
+  inRegister?: boolean;
+  register?: boolean;
+  /** Misregistration strength in em; only used when out of register. */
+  drift?: number;
+  class?: string;
+  transitionName?: string;
+}
+
+const {
+  lines,
+  as: Tag = 'div',
+  inRegister = true,
+  register = false,
+  drift = 0.035,
+  class: className,
+  transitionName,
+} = Astro.props;
+
+const label = lines.join(' ');
+const d = inRegister ? 0 : drift;
+const style = [
+  `--c-x:${-d}em; --c-y:${-d * 0.4}em`,
+  `--m-x:${d * 0.9}em; --m-y:${d * 0.7}em`,
+  `--y-x:${d * 0.2}em; --y-y:${-d}em`,
+  transitionName ? `view-transition-name:${transitionName}` : '',
+]
+  .filter(Boolean)
+  .join(';');
+---
+
+<Tag class:list={['plates', { 'is-registering': register }, className]} style={style}>
+  <span class="sr-only">{label}</span>
+  {
+    /* Colour plates draw their text from CSS (see ::before) so contrast audits only weigh the key plate on top. */
+    (['c', 'm', 'y'] as const).map((p) => (
+      <span class={`plate plate-${p}`} data-text={lines.join(String.fromCharCode(10))} aria-hidden="true" />
+    ))
+  }
+  <span class="plate plate-k" aria-hidden="true">
+    {lines.map((line, i) => (
+      <>
+        {i > 0 && <br />}
+        {line}
+      </>
+    ))}
+  </span>
+</Tag>
+
+<style>
+  .plates {
+    display: grid;
+    isolation: isolate;
+    width: fit-content;
+  }
+
+  .plate {
+    grid-area: 1 / 1;
+    mix-blend-mode: var(--blend);
+    transform: translate(var(--x), var(--y));
+  }
+
+  .plate:not(.plate-k)::before {
+    content: attr(data-text);
+    white-space: pre-line;
+  }
+
+  .plate-c {
+    color: var(--plate-c);
+    --x: var(--c-x);
+    --y: var(--c-y);
+  }
+
+  .plate-m {
+    color: var(--plate-m);
+    --x: var(--m-x);
+    --y: var(--m-y);
+  }
+
+  .plate-y {
+    color: var(--plate-y);
+    --x: var(--y-x);
+    --y: var(--y-y);
+  }
+
+  .plate-k {
+    color: var(--ink);
+    mix-blend-mode: normal;
+    transform: none;
+  }
+
+  /* The page's one authored moment: the plates drift into register. */
+  @media (prefers-reduced-motion: no-preference) {
+    .is-registering .plate:not(.plate-k) {
+      animation: register 1100ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+    }
+
+    .is-registering .plate-c {
+      --from-x: -0.09em;
+      --from-y: -0.03em;
+    }
+
+    .is-registering .plate-m {
+      --from-x: 0.08em;
+      --from-y: 0.05em;
+      animation-delay: 230ms;
+    }
+
+    .is-registering .plate-y {
+      --from-x: 0.02em;
+      --from-y: -0.08em;
+      animation-delay: 280ms;
+    }
+  }
+
+  @keyframes register {
+    from {
+      transform: translate(var(--from-x), var(--from-y));
+    }
+    to {
+      transform: translate(var(--x), var(--y));
+    }
+  }
+</style>

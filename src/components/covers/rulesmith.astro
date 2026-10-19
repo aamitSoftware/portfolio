@@ -1,0 +1,27 @@
+---
+import Diagram from '../Diagram.astro';
+---
+
+<Diagram
+  title="RuleSmith pipeline"
+  desc="WAF traffic is scored and grouped into incidents. Triage agents investigate with retrieval over CRS, CAPEC and CWE and draft a ModSecurity rule, and a red-team agent tries to bypass it. The rule is replayed in a sandbox WAF, and a human approves or rejects it."
+  nodes={[
+    { id: 'waf', x: 40, y: 90, w: 300, h: 130, label: 'WAF traffic', sub: 'ModSecurity audit log' },
+    { id: 'score', x: 490, y: 90, w: 300, h: 130, label: 'Score + group', sub: 'into incidents' },
+    { id: 'rag', x: 940, y: 90, w: 300, h: 130, label: 'Knowledge', sub: 'CRS, CAPEC, CWE', dashed: true },
+    { id: 'triage', x: 940, y: 340, w: 300, h: 130, label: 'Triage agents', sub: 'LangGraph' },
+    { id: 'draft', x: 490, y: 340, w: 300, h: 130, label: 'Draft SecRule' },
+    { id: 'red', x: 40, y: 340, w: 300, h: 130, label: 'Red-team', sub: 'tries to bypass it' },
+    { id: 'sandbox', x: 40, y: 610, w: 300, h: 130, label: 'Sandbox WAF', sub: 'replay attack + normal' },
+    { id: 'human', x: 490, y: 610, w: 300, h: 130, label: 'Human approves', sub: 'nothing ships alone', accent: 'c' },
+  ]}
+  edges={[
+    { from: 'waf', to: 'score' },
+    { from: 'score', to: 'triage' },
+    { from: 'rag', to: 'triage', label: 'retrieval' },
+    { from: 'triage', to: 'draft' },
+    { from: 'draft', to: 'red' },
+    { from: 'red', to: 'sandbox' },
+    { from: 'sandbox', to: 'human', label: 'evidence' },
+  ]}
+/>

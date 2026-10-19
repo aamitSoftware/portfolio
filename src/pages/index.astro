@@ -1,0 +1,455 @@
+---
+import { Image } from 'astro:assets';
+import Sheet from '../layouts/Sheet.astro';
+import Plates from '../components/Plates.astro';
+import RegMark from '../components/RegMark.astro';
+import WorkIndex from '../components/WorkIndex.astro';
+import Reel from '../components/Reel.astro';
+import EmailActions from '../components/EmailActions.astro';
+import { getProjects } from '../lib/projects';
+import { site } from '../lib/site';
+import avatar from '../assets/me/amit-avatar.png';
+import hub from '../assets/projects/bubble-up/hub.png';
+import home from '../assets/projects/bubble-up/home.png';
+import experts from '../assets/projects/bubble-up/experts.png';
+import room from '../assets/projects/bubble-up/room.png';
+import calendar from '../assets/projects/bubble-up/hub-calendar.png';
+import academy from '../assets/projects/bubble-up/academy.png';
+
+const featured = await getProjects({ featuredOnly: true });
+const total = (await getProjects()).length;
+
+const reel = [
+  { src: home, label: 'Home feed', alt: "Bubble.up running: the home feed with a live session to join and recent activity across the student's study groups." },
+  { src: hub, label: 'Group hub', alt: '' },
+  { src: experts, label: 'Expert sessions', alt: '' },
+  { src: room, label: 'Live room', alt: '' },
+  { src: calendar, label: 'Group calendar', alt: '' },
+  { src: academy, label: 'Course catalog', alt: '' },
+];
+
+const portfolioUrl = Astro.site?.origin ?? '';
+const recruiterSummary = [
+  'Amit Asher, backend-first full-stack engineer (Israel)',
+  'Now: Software Developer at Landa Digital Printing since Feb 2026. C#/.NET, React/TypeScript, Azure.',
+  'Shipped: Bubble.up, a live study-matching platform used by 130+ students in 40+ study groups. Java 21, Spring Boot, React, PostgreSQL, AWS, Terraform.',
+  "Building: AgentGate, a governance gateway for AI agents' MCP tool access. .NET 10, YARP, RabbitMQ, gRPC.",
+  'Education: B.Sc. Software Engineering, Ben-Gurion University, 2026.',
+  `Portfolio: ${portfolioUrl}`,
+  `LinkedIn: ${site.linkedin}`,
+  `Email: ${site.email}`,
+].join('\n');
+---
+
+<Sheet>
+  <section class="hero">
+    <div class="hero-text">
+      <Plates as="h1" lines={['Amit', 'Asher']} register class="name" />
+      <p class="lede">Backend-first full-stack engineer. I ship things to production and keep them running.</p>
+      <p class="support">
+        I design the APIs, the data and the real-time parts, deploy them to the cloud, and build the React on top.
+        Right now 130+ students study on Bubble.up, and I'm building AgentGate to keep AI agents' tool access in
+        check.
+      </p>
+      <div class="actions">
+        <EmailActions showAddress={false} />
+        <a href={site.github}>GitHub</a>
+        <a href={site.linkedin}>LinkedIn</a>
+        {site.cv && <a href={site.cv} download>CV (PDF)</a>}
+      </div>
+    </div>
+
+    <div class="hero-show">
+      <Reel
+        frames={reel}
+        ink="c"
+        caption="Bubble.up, live with 130+ students. Screens from the public demo."
+        href="/work/bubble-up"
+      />
+      <Image
+        src={avatar}
+        alt="Illustration of Amit: messy dark hair with a grey streak, a beard, a black jacket and white sneakers, sitting on a blue cube."
+        widths={[240, 360, 480]}
+        sizes="(min-width: 64rem) 15rem, 9rem"
+        class="avatar"
+        loading="eager"
+      />
+    </div>
+  </section>
+
+  <section id="recruiters" class="recruit" aria-labelledby="rec-h">
+    <div class="rec-head">
+      <h2 id="rec-h">The 30-second version</h2>
+      <p>For recruiters and hiring managers. Everything a first screen needs, on one card.</p>
+    </div>
+    <dl class="rec-grid">
+      <div>
+        <dt>Role</dt>
+        <dd>Backend-first full-stack engineer</dd>
+      </div>
+      <div>
+        <dt>Now</dt>
+        <dd>Software Developer at Landa Digital Printing, since Feb 2026</dd>
+      </div>
+      <div>
+        <dt>Shipped</dt>
+        <dd>Bubble.up: live, 130+ students in 40+ study groups</dd>
+      </div>
+      <div>
+        <dt>Building</dt>
+        <dd>AgentGate: governance for AI agents' tool access</dd>
+      </div>
+      <div>
+        <dt>Core stack</dt>
+        <dd>C# and .NET, React and TypeScript, PostgreSQL, Azure</dd>
+      </div>
+      <div>
+        <dt>Also</dt>
+        <dd>Java and Spring Boot, Python, AWS, Docker, Terraform, KQL</dd>
+      </div>
+      <div>
+        <dt>Education</dt>
+        <dd>B.Sc. Software Engineering, Ben-Gurion University, 2026</dd>
+      </div>
+      <div>
+        <dt>Based in</dt>
+        <dd>Israel</dd>
+      </div>
+    </dl>
+    <div class="rec-actions">
+      <EmailActions tone="inverse" subject="Hi Amit, a role you might like" showAddress={false} />
+      <button type="button" class="copy-summary" data-copy={recruiterSummary} data-done="Summary copied">
+        Copy summary for your notes
+      </button>
+      <a href={site.linkedin}>LinkedIn</a>
+      {site.cv && <a href={site.cv} download>CV (PDF)</a>}
+    </div>
+  </section>
+
+  <section id="work" class="section" aria-labelledby="work-h">
+    <div class="section-head">
+      <h2 id="work-h"><RegMark size={20} /> Work</h2>
+      {
+        total > featured.length ? (
+          <a href="/work">All {total} projects</a>
+        ) : (
+          <p class="count">Live work prints in register. The rest is still on the press.</p>
+        )
+      }
+    </div>
+    <WorkIndex projects={featured} />
+  </section>
+
+  <section id="experience" class="section split" aria-labelledby="exp-h">
+    <h2 id="exp-h"><RegMark size={20} /> Experience</h2>
+    <div class="measure">
+      <h3 class="job">Software Developer, Landa Digital Printing</h3>
+      <p class="job-when">February 2026 to now</p>
+      <p>
+        Full-stack on the software around Landa's industrial digital presses: C# and .NET services, TypeScript and
+        React front ends, all on Azure.
+      </p>
+      <ul class="dash">
+        <li>
+          Live press telemetry: data from Azure IoT Hub, through .NET and SignalR, onto React dashboards that update
+          while the press runs.
+        </li>
+        <li>Reusable Azure Data Explorer (KQL) functions and data pipelines that other engineering teams build on.</li>
+        <li>Moved services to cheaper deployment models and cut our cloud infrastructure costs.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="contact" class="section split" aria-labelledby="contact-h">
+    <h2 id="contact-h"><RegMark size={20} /> Contact</h2>
+    <div class="measure">
+      <p class="contact-lede">
+        I like small teams that ship, code reviews that teach me something, and problems where the data has to be
+        right. If that sounds like your team, say hi.
+      </p>
+      <div class="contact-actions">
+        <EmailActions />
+      </div>
+    </div>
+  </section>
+</Sheet>
+
+<script is:inline>
+  (() => {
+    const btn = document.querySelector('.copy-summary');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy);
+        btn.textContent = btn.dataset.done;
+      } catch {
+        btn.textContent = 'Copy failed. Select the card text instead.';
+      }
+      setTimeout(() => (btn.textContent = original), 2200);
+    });
+  })();
+</script>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 3rem clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    padding-bottom: clamp(3rem, 8vw, 6rem);
+  }
+
+  @media (max-width: 60rem) {
+    .hero {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  :global(.name) {
+    margin: 0;
+    font-size: clamp(4.25rem, 11vw, 8.5rem);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.86;
+    letter-spacing: -0.025em;
+  }
+
+  .lede {
+    margin: 2rem 0 0;
+    max-width: 22ch;
+    font-size: clamp(1.5rem, 2.6vw, 2.125rem);
+    line-height: 1.18;
+    font-weight: 650;
+    font-stretch: 106%;
+  }
+
+  .support {
+    margin: 1.25rem 0 0;
+    max-width: 50ch;
+    font-size: 1.125rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  /* The reel, with Amit perched on its corner. */
+  .hero-show {
+    position: relative;
+    padding-bottom: clamp(3rem, 8vw, 5rem);
+  }
+
+  .hero-show :global(.avatar) {
+    position: absolute;
+    left: clamp(-3rem, -3vw, -1rem);
+    bottom: 0;
+    width: clamp(8rem, 15vw, 15rem);
+    height: auto;
+    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.25));
+    pointer-events: none;
+  }
+
+  .hero-show :global(figcaption) {
+    padding-left: clamp(8rem, 13vw, 13rem);
+  }
+
+  /* Recruiter card: a solid key plate, reversed out. */
+  .recruit {
+    --rec-ink: var(--paper);
+    padding: clamp(2rem, 5vw, 3.5rem);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .recruit a {
+    color: var(--paper);
+    text-decoration-color: var(--paper);
+  }
+
+  .recruit :focus-visible {
+    outline-color: var(--paper);
+  }
+
+  .rec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+  }
+
+  .rec-head h2 {
+    margin: 0;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    font-stretch: 118%;
+  }
+
+  .rec-head p {
+    margin: 0;
+    max-width: 40ch;
+    opacity: 0.8;
+    font-size: 0.9375rem;
+  }
+
+  .rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 0 2.5rem;
+    margin: 2rem 0 0;
+    border-top: 2px solid var(--paper);
+  }
+
+  .rec-grid > div {
+    padding: 0.9rem 0 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--paper) 25%, var(--ink));
+  }
+
+  .rec-grid dt {
+    font-size: 0.8125rem;
+    font-stretch: 87.5%;
+    opacity: 0.75;
+  }
+
+  .rec-grid dd {
+    margin: 0.2rem 0 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .rec-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .copy-summary {
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--paper);
+    border-radius: 2px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .copy-summary:hover {
+    background: color-mix(in oklab, var(--paper) 12%, transparent);
+  }
+
+  .section {
+    padding-block: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .recruit + .section {
+    margin-top: clamp(1rem, 3vw, 2rem);
+  }
+
+  .section + .section {
+    border-top: 1px solid var(--rule);
+  }
+
+  .section h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin: 0;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 750;
+    font-stretch: 118%;
+  }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .count {
+    margin: 0;
+    color: var(--meta);
+    font-size: 0.9375rem;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2.2fr);
+    gap: 1.25rem clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .split .measure > * + * {
+    margin-top: 1rem;
+  }
+
+  .split .measure > :first-child {
+    margin-top: 0;
+  }
+
+  @media (max-width: 48rem) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .job {
+    margin: 0;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    font-stretch: 106%;
+  }
+
+  .split .measure > .job-when {
+    margin-top: 0.25rem;
+    color: var(--meta);
+    font-size: 0.9375rem;
+  }
+
+  .dash {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dash li {
+    position: relative;
+    padding-left: 1.25em;
+  }
+
+  .dash li + li {
+    margin-top: 0.6rem;
+  }
+
+  .dash li::before {
+    content: '';
+    position: absolute;
+    left: 0.1em;
+    top: 0.75em;
+    width: 0.6em;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  .contact-lede {
+    font-size: 1.25rem;
+    line-height: 1.45;
+  }
+
+  .split .measure > .contact-actions {
+    margin-top: 1.75rem;
+  }
+</style>

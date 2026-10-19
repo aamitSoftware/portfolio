@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke, accessibility (axe, WCAG 2.2 AA) and no-JS-bundle tests
+        run: npm run test:e2e
+
+      - name: Design detector (Impeccable)
+        run: npx --yes impeccable@latest detect --json src
+
+      - name: Lighthouse budgets
+        run: npx --yes @lhci/cli@0.15.x autorun
+
+      - name: Check links in the built site
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --exclude 'linkedin\.com'
+            --exclude 'mail\.google\.com'
+            --exclude '^mailto:'
+            --exclude 'amitasher\.vercel\.app'
+            --root-dir ${{ github.workspace }}/dist
+            'dist/**/*.html'
+          fail: true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

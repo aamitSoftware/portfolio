@@ -1,0 +1,53 @@
+---
+/**
+ * A registration target drawn once per plate: C, M and Y blended like ink, then key.
+ * A key copy sits on top, so in register the mark reads as solid key.
+ * Out of register the colour copies fringe around it, which is how the site says "not on press yet".
+ */
+interface Props {
+  size?: number;
+  inRegister?: boolean;
+  class?: string;
+}
+
+const { size = 18, inRegister = true, class: className } = Astro.props;
+
+// Small, deliberate misregistration in viewBox units (the mark is 24 wide).
+const offsets = inRegister
+  ? { c: [0, 0], m: [0, 0], y: [0, 0] }
+  : { c: [-1.6, -0.4], m: [1.4, 1.1], y: [0.3, -1.5] };
+---
+
+<svg
+  class:list={['regmark', className]}
+  width={size}
+  height={size}
+  viewBox="-2 -2 28 28"
+  aria-hidden="true"
+  focusable="false"
+>
+  {
+    (['c', 'm', 'y'] as const).map((p) => (
+      <g
+        transform={`translate(${offsets[p][0]} ${offsets[p][1]})`}
+        style={`stroke: var(--plate-${p}); mix-blend-mode: var(--blend);`}
+      >
+        <circle cx="12" cy="12" r="6.5" fill="none" stroke-width="1.6" />
+        <path d="M12 0v24M0 12h24" stroke-width="1.6" />
+      </g>
+    ))
+  }
+  <g style="stroke: var(--ink)">
+    <circle cx="12" cy="12" r="6.5" fill="none" stroke-width="1.6" />
+    <path d="M12 0v24M0 12h24" stroke-width="1.6" />
+  </g>
+</svg>
+
+<style>
+  .regmark {
+    display: inline-block;
+    flex: none;
+    overflow: visible;
+    isolation: isolate;
+  }
+</style>

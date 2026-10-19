@@ -1,0 +1,64 @@
+---
+title: Meterline
+summary: Open-source usage metering, plan limits and Stripe billing for SaaS.
+description: Meterline is a self-hosted usage metering and billing service for usage-priced SaaS, built in .NET 10 with Postgres, Redis and Stripe Billing meters.
+status: planned
+year: 2026
+role: Solo project
+stack:
+  - .NET 10, ASP.NET Core
+  - PostgreSQL
+  - Redis (Lua)
+  - Stripe Billing, Checkout
+  - SignalR, React
+  - .NET Aspire, Docker Compose
+  - k6, OpenTelemetry
+featured: true
+order: 3
+ink: y
+coverCaption: "Planned data flow: count once, check limits fast, and let Stripe do the charging."
+tagline: "Count every event once. Bill it through Stripe."
+features:
+  - title: "Exactly-once ingest"
+    body: "Usage events are deduplicated by id, so retries never double-bill a customer."
+  - title: "Limit checks in milliseconds"
+    body: "An atomic Redis script answers \"can she use 5,000 more tokens?\" before the request runs."
+  - title: "Stripe does the charging"
+    body: "Usage flows into Stripe Billing meters; Checkout and the customer portal handle the money."
+  - title: "Proof it adds up"
+    body: "A nightly reconciliation checks Meterline's ledger against Stripe."
+---
+
+## Problem
+
+Usage-priced SaaS ("pay per token", "pay per API call") needs a backend that counts every event exactly once, answers "is this customer over their limit?" in milliseconds, and bills through Stripe without ever disagreeing with Stripe. OpenMeter, Lago and Orb sell this. I want to understand it by building it.
+
+## What it will do
+
+A SaaS company runs Meterline next to its own app with `docker compose up` and its own Stripe keys. Meterline never holds anyone's money, cards or data.
+
+<Flow
+  label="What Meterline does for a SaaS company"
+  steps={[
+    'Count: ingest usage events and record each exactly once',
+    'Limit: answer "can this customer use 5,000 more tokens?" in a few ms',
+    'Bill: push usage to Stripe Billing meters; Stripe invoices and charges',
+    'Verify: a nightly reconciliation proves the ledger and Stripe agree',
+  ]}
+/>
+
+## Design decisions so far
+
+- **A modular monolith with two deployables** (API and worker) on one Postgres database. One team and one database make microservices pure overhead.
+- **Postgres only in v1, no message broker.** Background work uses `FOR UPDATE SKIP LOCKED`. A broker gets added only if a k6 load test proves Postgres can't keep up.
+- **Atomic consume in Redis with a Lua script**, so two concurrent requests can't both spend the last of a quota.
+- **A hand-rolled transactional outbox and inbox**, so at-least-once delivery never means double counting.
+- **Stripe in test mode only**, with a live dashboard over SignalR.
+
+## Hard parts I expect
+
+Correctness under concurrency, late events that arrive after a billing window closes, Stripe webhooks that arrive out of order, and proving all of that with a failing test per failure mode before writing the fix.
+
+## Where it stands
+
+Planned, with a full design written: data model, API, ADRs, a failure-modes table and 16 tickets. About eight weeks of evenings. This page will update as it ships.

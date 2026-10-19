@@ -1,0 +1,55 @@
+---
+title: RuleSmith
+summary: An AI analyst that turns WAF traffic into tested ModSecurity rules.
+description: RuleSmith scores ModSecurity traffic into incidents, then LangGraph agents draft, red-team and sandbox-test a SecRule for a human to approve.
+status: planned
+year: 2026
+role: Solo project
+stack:
+  - Python
+  - LangGraph
+  - ModSecurity, OWASP CRS
+  - RAG over CRS, CAPEC, CWE
+featured: true
+order: 5
+ink: c
+coverCaption: "Planned pipeline: agents draft and attack the rule, a sandbox proves it, a person decides."
+tagline: "WAF rules that come with evidence."
+features:
+  - title: "Incidents, not alerts"
+    body: "Thousands of WAF hits get scored and grouped into a handful of incidents worth reading."
+  - title: "Agents that cite sources"
+    body: "Triage runs on retrieval over OWASP CRS, CAPEC and CWE, not guesses."
+  - title: "Attacked before review"
+    body: "A red-team agent tries to bypass every drafted rule, and a sandbox WAF replays the traffic."
+  - title: "A person decides"
+    body: "Nothing ships on its own. A human approves the rule with the evidence in front of them."
+---
+
+## Problem
+
+A web application firewall throws thousands of alerts. Someone has to work out which ones are a real attack, write a rule that blocks it without blocking real users, and prove the rule works. That person is usually overloaded.
+
+## The plan
+
+RuleSmith acts as a junior analyst that never ships anything on its own.
+
+<Flow
+  label="How RuleSmith handles an incident"
+  steps={[
+    'Score: rate ModSecurity traffic and group it into incidents',
+    'Triage: LangGraph agents investigate with RAG over CRS, CAPEC and CWE',
+    'Draft: propose a SecRule for the incident',
+    'Red-team: another agent tries to bypass the rule',
+    'Prove: replay attack and normal traffic through a sandbox WAF',
+    'Approve: a human reviews the evidence and decides',
+  ]}
+/>
+
+## Why it's interesting
+
+The hard part isn't generating a rule. It's evidence: the rule has to block the attack, let normal traffic through, and survive a deliberate bypass attempt before anyone sees it.
+
+## Where it stands
+
+Planned. It pairs with AgentGate: both are about letting AI do real work while a person stays in control of what actually changes.

@@ -1,0 +1,463 @@
+---
+import '@fontsource-variable/jetbrains-mono';
+import { render } from 'astro:content';
+import { Image } from 'astro:assets';
+import Sheet from '../../layouts/Sheet.astro';
+import Plates from '../../components/Plates.astro';
+import RegMark from '../../components/RegMark.astro';
+import Flow from '../../components/Flow.astro';
+import Cover from '../../components/Cover.astro';
+import { getProjects, isInRegister, statusLabel, type Project } from '../../lib/projects';
+import { formatDate, lastPushed } from '../../lib/github';
+import EmailActions from '../../components/EmailActions.astro';
+import { gmailUrl } from '../../lib/contact';
+
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return projects.map((project, i) => ({
+    params: { slug: project.id },
+    props: { project, next: projects[(i + 1) % projects.length] },
+  }));
+}
+
+interface Props {
+  project: Project;
+  next: Project;
+}
+
+const { project, next } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+const pushed = await lastPushed(d.links.repo);
+const inRegister = isInRegister(d.status);
+const shipped = d.status === 'live' || d.status === 'archived' || d.status === 'research';
+
+const actions = [
+  d.links.live && { label: 'Open the live site', href: d.links.live },
+  d.links.demo && { label: 'Try the demo', href: d.links.demo },
+  d.links.repo && { label: 'Read the source', href: d.links.repo },
+  d.links.writeup && { label: 'Read the report', href: d.links.writeup },
+].filter(Boolean) as { label: string; href: string }[];
+const [primary, ...secondary] = actions;
+const askUrl = gmailUrl(`About ${d.title}`);
+---
+
+<Sheet title={d.title} description={d.description} og={`work/${project.id}`}>
+  <p class="back"><a href="/#work">Back to all work</a></p>
+
+  <!-- Hero: the project's own plate. -->
+  <header class="hero" style={`--panel: var(--proc-${d.ink})`}>
+    <div class="hero-text">
+      <p class="status">
+        <RegMark size={16} inRegister={inRegister} />
+        {statusLabel[d.status]}, {d.year}
+      </p>
+      <Plates
+        as="h1"
+        lines={[d.title]}
+        inRegister={inRegister}
+        drift={0.03}
+        class="title"
+        transitionName={`title-${project.id}`}
+      />
+      <p class="tagline">{d.tagline}</p>
+      <p class="summary">{d.summary}</p>
+      <div class="actions">
+        {
+          primary ? (
+            <a class="btn-key" href={primary.href}>
+              {primary.label}
+            </a>
+          ) : (
+            <a class="btn-key" href={askUrl} target="_blank" rel="noopener">
+              Ask me about it
+            </a>
+          )
+        }
+        {secondary.map((a) => <a href={a.href}>{a.label}</a>)}
+      </div>
+    </div>
+  </header>
+
+  <div class="hero-cover">
+    <Cover project={project} sizes="(min-width: 78rem) 1100px, 92vw" eager />
+  </div>
+
+  <dl class="facts">
+    <div>
+      <dt>Role</dt>
+      <dd>{d.role}</dd>
+    </div>
+    {
+      d.team && (
+        <div>
+          <dt>Team</dt>
+          <dd>{d.team}</dd>
+        </div>
+      )
+    }
+    <div class="wide">
+      <dt>Stack</dt>
+      <dd>{d.stack.join(', ')}</dd>
+    </div>
+    {
+      pushed && (
+        <div>
+          <dt>Last push</dt>
+          <dd class="tnum">
+            <time datetime={pushed.toISOString()}>{formatDate(pushed)}</time>
+          </dd>
+        </div>
+      )
+    }
+  </dl>
+
+  {
+    d.features.length > 0 && (
+      <section class="block" aria-labelledby="inside-h">
+        <h2 id="inside-h">What's inside</h2>
+        <ul class="features" role="list">
+          {d.features.map((f) => (
+            <li>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="block" aria-labelledby="action-h">
+    <h2 id="action-h">See it in action</h2>
+    {
+      d.gallery.length > 0 ? (
+        <div class="gallery">
+          {d.gallery.map((g) => (
+            <figure>
+              <div class="shot">
+                <Image src={g.src} alt={g.alt} widths={[480, 800, 1280]} sizes="(min-width: 64rem) 540px, 92vw" />
+              </div>
+              <figcaption>{g.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : (
+        <div class="gallery">
+          {[1, 2].map(() => (
+            <div class="blank" style={`--panel: var(--proc-${d.ink})`}>
+              <RegMark size={28} inRegister={false} />
+              <p>{shipped ? 'More screens on the way.' : 'Not on press yet. Screens land here when it ships.'}</p>
+            </div>
+          ))}
+        </div>
+      )
+    }
+  </section>
+
+  <section class="block under" aria-labelledby="hood-h">
+    <h2 id="hood-h">Under the hood</h2>
+    <article class="prose-sheet measure">
+      <Content components={{ Flow }} />
+    </article>
+  </section>
+
+  <aside class="close" style={`--panel: var(--proc-${d.ink})`} aria-label="Get in touch">
+    <p class="close-line">Want the full walkthrough of {d.title}?</p>
+    <p class="close-sub">I'm happy to go through the code and the decisions in an interview.</p>
+    <EmailActions tone="key" subject={`About ${d.title}`} label={`Email me about ${d.title}`} />
+  </aside>
+
+  {
+    next.id !== project.id && (
+      <nav class="next" aria-label="Next project">
+        <span class="next-label">Next project</span>
+        <a href={`/work/${next.id}`}>{next.data.title}</a>
+        <span class="next-summary">{next.data.summary}</span>
+      </nav>
+    )
+  }
+</Sheet>
+
+<style>
+  .back {
+    margin: 0 0 2rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Hero printed as a solid plate of the project's ink, key type on top. */
+  .hero {
+    --ink: #000;
+    --meta: #000;
+    --paper: var(--panel);
+    --plate-c: #00a0e3;
+    --plate-m: #e5007d;
+    --plate-y: #ffe600;
+    --blend: multiply;
+    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 4rem) clamp(7rem, 16vw, 12rem);
+    background: var(--panel);
+    color: #000;
+  }
+
+  .hero a {
+    color: #000;
+    text-decoration-color: #000;
+  }
+
+  .hero :focus-visible {
+    outline-color: #000;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  :global(.hero .title) {
+    margin: 0;
+    font-size: clamp(3rem, 10vw, 7rem);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+
+  .tagline {
+    margin: 1.25rem 0 0;
+    max-width: 22ch;
+    font-size: clamp(1.5rem, 3.2vw, 2.375rem);
+    font-weight: 700;
+    font-stretch: 106%;
+    line-height: 1.15;
+  }
+
+  .summary {
+    margin: 1rem 0 0;
+    max-width: 48ch;
+    font-size: 1.125rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .btn-key {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    background: #000;
+    color: var(--panel, #fff) !important;
+    font-weight: 650;
+    text-decoration: none;
+    border-radius: 2px;
+  }
+
+  .btn-key:hover {
+    background: #222;
+    text-decoration: none;
+  }
+
+  /* The cover overlaps the bottom of the plate, like a print laid on the press sheet. */
+  .hero-cover {
+    margin: calc(-1 * clamp(5rem, 13vw, 10rem)) clamp(1rem, 5vw, 4rem) 0;
+  }
+
+  .hero-cover :global(.panel) {
+    padding: 0;
+    background: transparent;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0 2rem;
+    margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
+    border-top: 2px solid var(--ink);
+  }
+
+  .facts > div {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .facts .wide {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 40rem) {
+    .facts .wide {
+      grid-column: auto;
+    }
+  }
+
+  .facts dt {
+    font-size: 0.8125rem;
+    font-stretch: 87.5%;
+    color: var(--meta);
+  }
+
+  .facts dd {
+    margin: 0.15rem 0 0;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .block {
+    padding-top: clamp(3rem, 7vw, 5rem);
+  }
+
+  .block h2 {
+    margin: 0 0 1.75rem;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    font-stretch: 118%;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 0 2.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+  }
+
+  .features li {
+    padding: 1.25rem 0 1.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .features h3 {
+    margin: 0;
+    font-size: 1.1875rem;
+    font-weight: 750;
+    font-stretch: 106%;
+  }
+
+  .features p {
+    margin: 0.5rem 0 0;
+    color: var(--meta);
+    font-size: 1rem;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 2.5rem;
+  }
+
+  .gallery figure {
+    margin: 0;
+  }
+
+  .shot {
+    outline: 1px solid var(--rule);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.12),
+      0 14px 30px -14px rgb(0 0 0 / 0.35);
+  }
+
+  .shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .gallery figcaption {
+    margin-top: 0.9rem;
+    color: var(--meta);
+    font-size: 0.875rem;
+    font-stretch: 87.5%;
+  }
+
+  /* A skeleton slot: the project's plate, waiting for its screens. */
+  .blank {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.9rem;
+    aspect-ratio: 16 / 10;
+    padding: 1.5rem;
+    background: color-mix(in oklab, var(--panel) 22%, var(--paper));
+    outline: 1px dashed color-mix(in oklab, var(--panel) 70%, var(--ink));
+    outline-offset: -1px;
+    text-align: center;
+  }
+
+  .blank p {
+    margin: 0;
+    max-width: 26ch;
+    font-size: 0.9375rem;
+  }
+
+  .under .prose-sheet :global(> h2:first-child) {
+    margin-top: 0;
+  }
+
+  .under .prose-sheet :global(h2) {
+    font-size: 1.375rem;
+  }
+
+  .close {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+    margin-top: clamp(4rem, 8vw, 6rem);
+    padding: clamp(2rem, 5vw, 3.5rem);
+    background: var(--panel);
+    color: #000;
+  }
+
+  .close-line {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    font-stretch: 112%;
+    line-height: 1.15;
+  }
+
+  .close-sub {
+    margin: 0 0 1rem;
+    max-width: 48ch;
+  }
+
+  .close :focus-visible {
+    outline-color: #000;
+  }
+
+  .next {
+    display: grid;
+    gap: 0.2rem;
+    margin-top: clamp(3rem, 6vw, 4rem);
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--ink);
+  }
+
+  .next-label {
+    font-size: 0.8125rem;
+    font-stretch: 87.5%;
+    color: var(--meta);
+  }
+
+  .next a {
+    width: fit-content;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    font-stretch: 118%;
+    line-height: 1.1;
+  }
+
+  .next-summary {
+    color: var(--meta);
+  }
+</style>

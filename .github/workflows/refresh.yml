@@ -1,0 +1,18 @@
+name: Weekly refresh
+
+# Rebuilds production once a week so "last push" dates on project pages stay current.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "VERCEL_DEPLOY_HOOK secret not set, skipping."; exit 0; fi
+          curl -fsS -X POST "$HOOK"

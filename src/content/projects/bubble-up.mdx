@@ -1,0 +1,87 @@
+---
+title: Bubble.up
+summary: Study-partner matching for BGU students, with a workspace per group.
+description: Bubble.up matches university students into balanced study groups and gives each group chat, calendar, files and live sessions. Used by 130+ BGU students.
+status: live
+year: 2026
+role: Full-stack developer
+team: Built with Ron Kadosh and Gal Halifa
+stack:
+  - Java 21, Spring Boot 3
+  - PostgreSQL, JPA
+  - React 18, TypeScript, Zustand
+  - WebSocket (STOMP)
+  - AWS EC2, S3, Terraform
+  - Docker Compose, Caddy
+  - Google OAuth
+links:
+  live: https://www.bubbleup.online
+  repo: https://github.com/RonKadosh/bubble-up
+featured: true
+order: 1
+ink: c
+cover:
+  src: ../../assets/projects/bubble-up/hub.png
+  alt: A Bubble's hub in Bubble.up, with group chat, a poll, an upcoming expert session in the calendar, and shared files.
+  caption: A Bubble's hub. Chat, calendar and files in one place. Demo data.
+gallery:
+  - src: ../../assets/projects/bubble-up/home.png
+    alt: The Bubble.up home screen, showing a live Q&A session to join and recent activity across the student's Bubbles.
+    caption: Home. A live session to join and what's happening across your Bubbles.
+  - src: ../../assets/projects/bubble-up/room.png
+    alt: A Bubble.up live room with video, a shared whiteboard and session chat side by side.
+    caption: A live room with video, whiteboard and chat side by side.
+tagline: "Study groups that actually study."
+features:
+  - title: "Matching, not browsing"
+    body: "A short quiz plus how you use the app. Bubble.up recommends groups that need what you're good at."
+  - title: "A workspace per group"
+    body: "Chat, a shared calendar, files and polls, ready the moment the group exists."
+  - title: "Live rooms"
+    body: "Video, a shared whiteboard and chat side by side, without leaving the app."
+  - title: "Experts on tap"
+    body: "TAs and tutors open sessions that whole groups can enroll into."
+---
+
+## Problem
+
+Every student knows a good study group helps. Finding one is mostly luck: you ask around, join a random WhatsApp group, and hope someone shows up. The people who would be a great fit are sitting in the same lecture hall, but nothing connects them.
+
+## What we built
+
+Bubble.up puts students into **Bubbles**: small study groups tied to one course. Students take a short opt-in quiz and use the app. Both feed a profile, and the matching engine recommends Bubbles where they would add something the group is missing.
+
+Every Bubble comes ready to work in: real-time chat, a shared calendar, file storage, and live sessions with video and a shared whiteboard. TAs and tutors can register as experts and open sessions that Bubbles enroll into.
+
+It started as our project for BGU's Systems Analysis and Design course. It's now a live product: **130+ students in 40+ study groups**.
+
+## How matching works
+
+The goal is balanced groups, not similar people. A group of five natural leaders and no planner isn't a good group.
+
+<Flow
+  label="How a student is matched to a Bubble"
+  steps={[
+    'Profile: quiz answers plus in-app behaviour, as a vector over seven collaboration roles',
+    'Confidence: grows with the variety of evidence, not raw volume',
+    'Gap: what roles is this Bubble short on?',
+    'Fit: cosine similarity between the student and the gap',
+    'Blend: low confidence leans on trending groups, high confidence on personal fit',
+  ]}
+/>
+
+Behaviour signals go through a saturating curve, so a thousand chat messages can't fake a strong profile. The whole score is one pure, deterministic function with no I/O, which means the live path and the precomputed match cache can't drift apart, and the numbers are reproducible in unit tests.
+
+## Hard parts
+
+- **Module boundaries that hold.** The backend is split by feature (`auth`, `groups`, `chat`, `matching`, `catalog`, and more), each shaped `model → persistence → application → api`. Features only talk through a small `internal/` interface. Without that rule they fuse together within a semester.
+- **Running it for real users on a student budget.** One EC2 instance, provisioned with Terraform and managed through SSM, so there are no SSH keys to lose. Postgres and uploads live on a separate EBS volume, Caddy handles TLS, and the database is dumped to S3 every night.
+- **Hebrew and English from day one.** Every string is translated and the layout uses logical CSS properties, so the same components render left-to-right and right-to-left.
+
+## Results
+
+Real students use it, so real students report bugs. We triage those reports from the production database and fix them on a dev branch before they ship.
+
+## What's next
+
+Filling the course catalog from BGU's public yearbooks (a parser already exists), and deciding how much of the matching logic to show students. A "you're a strong Planner and this group needs one" explanation builds trust, but it also invites people to game the quiz.
