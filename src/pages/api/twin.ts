@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request, clientAddress, site }) => {
   const history = body.messages.slice(-KEEP_LAST);
   while (history.length && history[0].role !== 'user') history.shift();
   const last = history.at(-1);
-  if (!last || last.role !== 'user') return json(400, 'The last message must be from the visitor.');
+  if (last?.role !== 'user') return json(400, 'The last message must be from the visitor.');
   if (last.content.length > MAX_USER_CHARS) return json(400, `Keep questions under ${MAX_USER_CHARS} characters.`);
 
   const visitor = await hashVisitor(clientAddress ?? request.headers.get('x-forwarded-for') ?? 'unknown');
@@ -64,7 +64,10 @@ export const POST: APIRoute = async ({ request, clientAddress, site }) => {
       const send = (event: string, data: unknown) =>
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       try {
-        for await (const ev of answer(messages, { allowNotification: () => allowNotification(visitor), transcriptTail })) {
+        for await (const ev of answer(messages, {
+          allowNotification: () => allowNotification(visitor),
+          transcriptTail,
+        })) {
           if (ev.type === 'text') send('text', ev.text);
           else if (ev.type === 'tool') send('tool', ev.name);
           else send('done', ev.stop);

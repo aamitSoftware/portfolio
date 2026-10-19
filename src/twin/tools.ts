@@ -52,7 +52,10 @@ export interface ToolContext {
 }
 
 /** Runs a tool call. Inputs are untrusted model output, so they are validated before anything happens. */
-export async function runTool(block: Anthropic.ToolUseBlock, ctx: ToolContext): Promise<Anthropic.ToolResultBlockParam> {
+export async function runTool(
+  block: Anthropic.ToolUseBlock,
+  ctx: ToolContext,
+): Promise<Anthropic.ToolResultBlockParam> {
   const result = (content: string, isError = false): Anthropic.ToolResultBlockParam => ({
     type: 'tool_result',
     tool_use_id: block.id,

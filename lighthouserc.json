@@ -2,11 +2,7 @@
   "ci": {
     "collect": {
       "staticDistDir": "./.vercel/output/static",
-      "url": [
-        "/index.html",
-        "/work/bubble-up/index.html",
-        "/work/agentgate/index.html"
-      ],
+      "url": ["/index.html", "/work/bubble-up/index.html", "/work/agentgate/index.html"],
       "numberOfRuns": 2,
       "settings": {
         "preset": "desktop"

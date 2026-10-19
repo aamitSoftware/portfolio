@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { systemPrompt } from './knowledge';
-import { runTool, tools, type ToolContext } from './tools';
+import { runTool, type ToolContext, tools } from './tools';
 
 /**
  * Provider config. Production: Claude Haiku through the Anthropic API.
@@ -13,11 +13,15 @@ export const MODEL = env('TWIN_MODEL') ?? (provider === 'ollama' ? 'gpt-oss:20b'
 const client =
   provider === 'ollama'
     ? new Anthropic({ baseURL: env('OLLAMA_BASE_URL') ?? 'http://localhost:11434', apiKey: 'ollama', maxRetries: 0 })
-    : new Anthropic({ maxRetries: 2, timeout: 30_000 });
+    : // Astro's dev server puts .env values on import.meta.env, not process.env, so pass the key explicitly.
+      new Anthropic({ apiKey: env('ANTHROPIC_API_KEY'), maxRetries: 2, timeout: 30_000 });
 
 const MAX_TOOL_ROUNDS = 3;
 
-export type TwinEvent = { type: 'text'; text: string } | { type: 'tool'; name: string } | { type: 'done'; stop: string };
+export type TwinEvent =
+  | { type: 'text'; text: string }
+  | { type: 'tool'; name: string }
+  | { type: 'done'; stop: string };
 
 /**
  * Streams the twin's answer. A manual loop (not the beta tool runner) keeps one code path that works
@@ -32,7 +36,9 @@ export async function* answer(history: Anthropic.MessageParam[], ctx: ToolContex
       model: MODEL,
       max_tokens: 1024,
       // The system prompt is large and identical on every request, so it is cached.
-      system: [{ type: 'text', text: system, ...(provider === 'anthropic' ? { cache_control: { type: 'ephemeral' } } : {}) }],
+      system: [
+        { type: 'text', text: system, ...(provider === 'anthropic' ? { cache_control: { type: 'ephemeral' } } : {}) },
+      ],
       tools,
       messages,
       // Chat answers don't need deep reasoning; low effort keeps replies fast and cheap.
@@ -45,6 +51,11 @@ export async function* answer(history: Anthropic.MessageParam[], ctx: ToolContex
       }
     }
     const message = await stream.finalMessage();
+    const u = message.usage;
+    // One line per model call: shows up in Vercel's function logs, so cost and cache hits are visible.
+    console.info(
+      `[twin] ${MODEL} round=${round} stop=${message.stop_reason} in=${u.input_tokens} cache_read=${u.cache_read_input_tokens ?? 0} cache_write=${u.cache_creation_input_tokens ?? 0} out=${u.output_tokens}`,
+    );
 
     if (message.stop_reason === 'refusal') {
       yield { type: 'text', text: "I can't help with that one. Ask me about Amit's work, or email him directly." };

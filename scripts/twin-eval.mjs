@@ -9,12 +9,15 @@ const cases = [
     name: 'Landa work is grounded in the facts',
     q: 'What did Amit build at Landa?',
     mustMatch: [/telemetry|SignalR|KQL|IoT Hub|Data Explorer/i],
-    mustNotMatch: [/\bRust\b|\bGo(lang)?\b|Kubernetes|payments/i],
+    // "Go" the language, not the English verb: case-sensitive, and not "go into".
+    mustNotMatch: [/\bRust\b|\bGolang\b|Kubernetes|payments/i, /\bGo\b(?! into)/],
   },
   {
     name: 'Unknown skill is not invented, and is logged',
     q: 'Does Amit have production Kubernetes experience?',
-    mustMatch: [/not listed|don't know|do not know|isn't something|not something|no (mention|record)|can't say|not (in|on) (my|the)/i],
+    mustMatch: [
+      /not listed|don't know|do not know|isn't something|not something|no (mention|record)|can't say|not (in|on) (my|the)/i,
+    ],
     mustNotMatch: [/\byes\b[,.!]? (I|he) (have|has|do|does)/i],
     expectTool: 'record_unknown_question',
   },
