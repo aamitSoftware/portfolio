@@ -70,11 +70,14 @@ test('unknown pages get the 404 sheet', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Go to the home page' })).toBeVisible();
 });
 
-test('pages ship no client JavaScript bundles', async ({ page }) => {
-  const scripts: string[] = [];
-  page.on('request', (r) => r.resourceType() === 'script' && scripts.push(r.url()));
-  for (const path of pages) await page.goto(path);
-  expect(scripts).toEqual([]);
+test('client JavaScript stays inside the 50 KB budget', async ({ page }) => {
+  // Static pages ship no bundles; the only bundle allowed is the twin chat, when it is enabled.
+  const bytes: number[] = [];
+  page.on('response', async (r) => {
+    if (r.request().resourceType() === 'script') bytes.push((await r.body()).length);
+  });
+  for (const path of pages) await page.goto(path, { waitUntil: 'networkidle' });
+  expect(bytes.reduce((a, b) => a + b, 0)).toBeLessThan(50 * 1024);
 });
 
 test('each page has an OG image that resolves', async ({ page, request }) => {

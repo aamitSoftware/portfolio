@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Tests run against the production build served by `astro preview`.
+// Tests run against the production build, served the way Vercel serves it (see scripts/serve-static.mjs).
 export default defineConfig({
   testDir: 'tests',
   fullyParallel: true,
@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: 'http://localhost:4322' },
   webServer: {
-    command: 'npm run preview -- --port 4322',
+    command: 'node scripts/serve-static.mjs .vercel/output/static 4322',
     url: 'http://localhost:4322',
     reuseExistingServer: !process.env.CI,
   },

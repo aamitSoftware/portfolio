@@ -6,6 +6,7 @@ import RegMark from '../components/RegMark.astro';
 import WorkIndex from '../components/WorkIndex.astro';
 import Reel from '../components/Reel.astro';
 import EmailActions from '../components/EmailActions.astro';
+import Twin from '../components/Twin.astro';
 import { getProjects } from '../lib/projects';
 import { site } from '../lib/site';
 import avatar from '../assets/me/amit-avatar.png';
@@ -16,6 +17,8 @@ import room from '../assets/projects/bubble-up/room.png';
 import calendar from '../assets/projects/bubble-up/hub-calendar.png';
 import academy from '../assets/projects/bubble-up/academy.png';
 
+// The twin needs an API key on the server; the flag keeps the chat hidden until one is configured.
+const twinEnabled = import.meta.env.PUBLIC_TWIN_ENABLED === 'true';
 const featured = await getProjects({ featuredOnly: true });
 const total = (await getProjects()).length;
 
@@ -124,6 +127,7 @@ const recruiterSummary = [
       <a href={site.linkedin}>LinkedIn</a>
       {site.cv && <a href={site.cv} download>CV (PDF)</a>}
     </div>
+    {twinEnabled && <Twin />}
   </section>
 
   <section id="work" class="section" aria-labelledby="work-h">
