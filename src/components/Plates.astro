@@ -11,6 +11,8 @@ interface Props {
   as?: 'h1' | 'p' | 'div';
   inRegister?: boolean;
   register?: boolean;
+  /** The plates slide out of register toward the pointer and spring back when it leaves. */
+  interactive?: boolean;
   /** Misregistration strength in em; only used when out of register. */
   drift?: number;
   class?: string;
@@ -22,6 +24,7 @@ const {
   as: Tag = 'div',
   inRegister = true,
   register = false,
+  interactive = false,
   drift = 0.035,
   class: className,
   transitionName,
@@ -39,7 +42,11 @@ const style = [
   .join(';');
 ---
 
-<Tag class:list={['plates', { 'is-registering': register }, className]} style={style}>
+<Tag
+  class:list={['plates', { 'is-registering': register }, className]}
+  style={style}
+  data-interactive={interactive ? '' : undefined}
+>
   <span class="sr-only">{label}</span>
   {
     /* Colour plates draw their text from CSS (see ::before) so contrast audits only weigh the key plate on top. */
@@ -57,6 +64,41 @@ const style = [
   </span>
 </Tag>
 
+{
+  interactive && (
+    <script is:inline>
+      (() => {
+        const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!fine || still) return;
+        const clamp = (v) => Math.max(-1, Math.min(1, v));
+        for (const el of document.querySelectorAll('.plates[data-interactive]:not([data-wired])')) {
+          el.dataset.wired = '1';
+          el.querySelector('.plate-y')?.addEventListener('animationend', () => el.classList.remove('is-registering'));
+          let frame = 0;
+          window.addEventListener('pointermove', (e) => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+              const r = el.getBoundingClientRect();
+              if (r.bottom < 0 || r.top > innerHeight) return;
+              const dx = clamp((e.clientX - (r.left + r.width / 2)) / r.width);
+              const dy = clamp((e.clientY - (r.top + r.height / 2)) / r.height);
+              el.style.setProperty('--px', `${(dx * 0.035).toFixed(4)}em`);
+              el.style.setProperty('--py', `${(dy * 0.035).toFixed(4)}em`);
+              el.classList.add('is-moving');
+            });
+          });
+          document.documentElement.addEventListener('pointerleave', () => {
+            el.style.setProperty('--px', '0em');
+            el.style.setProperty('--py', '0em');
+            el.classList.remove('is-moving');
+          });
+        }
+      })();
+    </script>
+  )
+}
+
 <style>
   .plates {
     display: grid;
@@ -67,7 +109,19 @@ const style = [
   .plate {
     grid-area: 1 / 1;
     mix-blend-mode: var(--blend);
-    transform: translate(var(--x), var(--y));
+    transform: translate(calc(var(--x) + var(--px) * var(--kx)), calc(var(--y) + var(--py) * var(--ky)));
+    transition: transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .is-moving .plate {
+    transition-duration: 160ms;
+  }
+
+  /* Pointer offset, set by the script on the plates element and inherited by each plate.
+     Each plate multiplies it by its own --kx/--ky, so the colours fan out around the key. */
+  .plates {
+    --px: 0em;
+    --py: 0em;
   }
 
   .plate:not(.plate-k)::before {
@@ -79,18 +133,24 @@ const style = [
     color: var(--plate-c);
     --x: var(--c-x);
     --y: var(--c-y);
+    --kx: -1;
+    --ky: -0.6;
   }
 
   .plate-m {
     color: var(--plate-m);
     --x: var(--m-x);
     --y: var(--m-y);
+    --kx: 0.9;
+    --ky: 0.8;
   }
 
   .plate-y {
     color: var(--plate-y);
     --x: var(--y-x);
     --y: var(--y-y);
+    --kx: 0.25;
+    --ky: -1;
   }
 
   .plate-k {
