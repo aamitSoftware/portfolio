@@ -1,0 +1,63 @@
+---
+title: Obnoxious Gym Bro
+summary: Open-source accountability app that nags you to the gym on Telegram.
+tagline: It texts you on gym days and roasts you when you skip.
+description: Obnoxious Gym Bro is an open-source accountability app. It nags you on Telegram on gym days, tracks check-ins and streaks, and has an avatar that reacts.
+status: planned
+year: 2026
+role: Solo project
+stack:
+  - Next.js, React, TypeScript (planned)
+  - .NET API (planned)
+  - Telegram Bot API
+  - OAuth / OIDC sign-in
+  - MSW for mock-first development
+featured: true
+order: 6
+ink: y
+features:
+  - title: A daily nag on Telegram
+    body: At the time you pick, it sends today's workout. Skip it and the follow-ups get a little harsher.
+  - title: Check in from the chat
+    body: Tap went or skipped right in Telegram, or check in on the web.
+  - title: An avatar that reacts
+    body: It slides from couch goblin to hero based on how consistent you are. It roasts the effort, never the body.
+  - title: Streaks that forgive
+    body: A make-up session repairs a missed day, and pause mode freezes everything when you're sick or away.
+---
+
+## Problem
+
+I hate the gym and I'm bad at staying consistent. Habit apps are easy to ignore: a silent notification, a streak counter, and once the streak breaks, people quit. I want something that shows up where I already am and is a bit too annoying to ignore.
+
+## What it will do
+
+<Flow
+  label="A day with Obnoxious Gym Bro"
+  steps={[
+    'Nag: a Telegram message at your chosen time with today\'s workout',
+    'Check in: went or skipped, from inline buttons or the web',
+    'Escalate: no answer means up to two harsher follow-ups',
+    'React: the avatar and your streak update from recent consistency',
+    'Forgive: a make-up session repairs a missed day',
+  ]}
+/>
+
+You pick a beginner program, your gym days, a nag time and an intensity: gentle, gym bro or drill sergeant.
+
+## Design decisions so far
+
+- **Weak and lazy, never fat.** Body shaming makes people avoid exercise, so the avatar and the roasts only ever target effort.
+- **Streak repair and a gentle mode.** A broken streak is the moment most people give up, so the app is built to recover from one.
+- **Telegram before web push.** iOS only allows web push after "Add to Home Screen", and a chat message with buttons is harder to ignore.
+- **Curated roasts first.** A hand-written roast bank ships in v1. An LLM comes later, with guardrails.
+- **Not another workout tracker.** Logging sets and reps is solved; it can integrate with open tools like wger later.
+- **Mocks first.** The Next.js frontend is built against mocked APIs (MSW), then wired to a real .NET backend.
+
+## Why I'm building it
+
+Two goals in one project. It's a product I actually want, open source and hosted for real users. It's also how I'm leveling up on the frontend: designing screens from a blank page, typed end to end against my own API, with real-time updates and frontend security handled properly. I'm going all in on the architecture too, rather than shipping a toy.
+
+## Where it stands
+
+Requirements phase. The v1 feature list is drafted: OAuth sign-in, linking Telegram with a one-time token, onboarding, the daily nag, check-ins, escalation, streaks with repair, the avatar, a calendar history, pause mode, and data export and deletion. Next come system requirements, then architecture, then the build. Screens land on this page as they ship.
