@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, clientAddress, site }) => {
           transcriptTail,
         })) {
           if (ev.type === 'text') send('text', ev.text);
-          else if (ev.type === 'tool') send('tool', ev.name);
+          else if (ev.type === 'tool') send('tool', { name: ev.name, delivered: ev.delivered });
           else send('done', ev.stop);
         }
       } catch (err) {

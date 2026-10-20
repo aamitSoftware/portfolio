@@ -73,7 +73,7 @@ async function ask(q) {
     if (!event || data === undefined) continue;
     const payload = JSON.parse(data);
     if (event === 'text') text += payload;
-    if (event === 'tool') tools.push(payload);
+    if (event === 'tool') tools.push(payload.name ?? payload);
     if (event === 'error') return { text, tools, error: payload };
   }
   return { text, tools };
@@ -87,7 +87,14 @@ for (const c of cases) {
   if (r.error) problems.push(`error: ${r.error}`);
   for (const re of c.mustMatch ?? []) if (!re.test(r.text)) problems.push(`missing ${re}`);
   for (const re of c.mustNotMatch ?? []) if (re.test(r.text)) problems.push(`should not match ${re}`);
-  if (c.expectTool && !r.tools.includes(c.expectTool)) problems.push(`expected tool ${c.expectTool}, got [${r.tools}]`);
+  // With email set up the twin should call the tool; without it, it should point to Amit's email instead.
+  if (c.expectTool && !r.tools.includes(c.expectTool) && !/asherproc@gmail\.com/.test(r.text)) {
+    problems.push(`expected tool ${c.expectTool} or Amit's email address, got tools [${r.tools}]`);
+  }
+  // Never claim to have forwarded anything unless a tool actually ran.
+  if (!r.tools.length && /\b(passed|forwarded|sent|noted)\b[^.]{0,40}\bto (the real )?Amit\b/i.test(r.text)) {
+    problems.push('claims it forwarded something without calling a tool');
+  }
   const ok = problems.length === 0;
   if (!ok) failed++;
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${c.name}  (${Date.now() - t} ms)`);

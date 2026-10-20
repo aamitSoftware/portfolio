@@ -105,8 +105,14 @@ const starters = [
             if (event === 'text') {
               text += payload;
               out.textContent = plain(text);
-            } else if (event === 'tool') {
-              bubble('note', payload === 'record_lead' ? 'Passed your details to Amit.' : 'Noted that one for Amit.');
+            } else if (event === 'tool' && payload.delivered) {
+              // Only shown when an email really went out to Amit.
+              bubble(
+                'note',
+                payload.name === 'record_lead'
+                  ? "Emailed your details to Amit. He'll reply to you directly."
+                  : 'Emailed this question to Amit so he can answer it himself.',
+              );
             } else if (event === 'error') {
               out.textContent = payload;
             }

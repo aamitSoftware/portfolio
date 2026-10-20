@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { systemPrompt } from './knowledge';
+import { canNotify } from './notify';
 import { runTool, type ToolContext, tools } from './tools';
 
 /**
@@ -20,7 +21,7 @@ const MAX_TOOL_ROUNDS = 3;
 
 export type TwinEvent =
   | { type: 'text'; text: string }
-  | { type: 'tool'; name: string }
+  | { type: 'tool'; name: string; delivered: boolean }
   | { type: 'done'; stop: string };
 
 /**
@@ -28,8 +29,11 @@ export type TwinEvent =
  * against both the Anthropic API and Ollama.
  */
 export async function* answer(history: Anthropic.MessageParam[], ctx: ToolContext): AsyncGenerator<TwinEvent> {
-  const system = await systemPrompt();
+  // Without a working email service the forwarding tools are not offered, so the twin can't claim to forward.
+  const canForward = canNotify();
+  const system = await systemPrompt(canForward);
   const messages: Anthropic.MessageParam[] = [...history];
+  let wroteText = false;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     const stream = client.messages.stream({
@@ -39,14 +43,21 @@ export async function* answer(history: Anthropic.MessageParam[], ctx: ToolContex
       system: [
         { type: 'text', text: system, ...(provider === 'anthropic' ? { cache_control: { type: 'ephemeral' } } : {}) },
       ],
-      tools,
+      ...(canForward ? { tools } : {}),
       messages,
       // Chat answers don't need deep reasoning; low effort keeps replies fast and cheap.
       ...(provider === 'anthropic' ? { output_config: { effort: 'low' as const } } : {}),
     });
 
+    // Text written after a tool call starts a new paragraph instead of running into the previous one.
+    let separated = !wroteText;
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        if (!separated) {
+          yield { type: 'text', text: '\n\n' };
+          separated = true;
+        }
+        wroteText = true;
         yield { type: 'text', text: event.delta.text };
       }
     }
@@ -73,8 +84,9 @@ export async function* answer(history: Anthropic.MessageParam[], ctx: ToolContex
     messages.push({ role: 'assistant', content: message.content });
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const block of toolUses) {
-      yield { type: 'tool', name: block.name };
-      results.push(await runTool(block, ctx));
+      const { result, delivered } = await runTool(block, ctx);
+      yield { type: 'tool', name: block.name, delivered };
+      results.push(result);
     }
     // All results for one turn go back in a single user message.
     messages.push({ role: 'user', content: results });

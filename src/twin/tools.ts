@@ -55,13 +55,17 @@ export interface ToolContext {
 export async function runTool(
   block: Anthropic.ToolUseBlock,
   ctx: ToolContext,
-): Promise<Anthropic.ToolResultBlockParam> {
-  const result = (content: string, isError = false): Anthropic.ToolResultBlockParam => ({
-    type: 'tool_result',
-    tool_use_id: block.id,
-    content,
-    ...(isError ? { is_error: true } : {}),
+): Promise<{ result: Anthropic.ToolResultBlockParam; delivered: boolean }> {
+  const result = (content: string, isError = false, delivered = false) => ({
+    result: {
+      type: 'tool_result' as const,
+      tool_use_id: block.id,
+      content,
+      ...(isError ? { is_error: true } : {}),
+    },
+    delivered,
   });
+  const fallback = 'Ask them to email Amit directly at asherproc@gmail.com.';
 
   if (block.name === 'record_lead') {
     const parsed = LeadInput.safeParse(block.input);
@@ -77,16 +81,20 @@ export async function runTool(
       'Recent conversation:',
       ctx.transcriptTail,
     ]);
-    return ok ? result('Sent to Amit.') : result('Could not send right now. Ask them to email Amit directly.', true);
+    return ok
+      ? result('Emailed to Amit. Tell the visitor he will reply to them by email.', false, true)
+      : result(`Their details were NOT sent to Amit (email is unavailable). Say so briefly. ${fallback}`, true);
   }
 
   if (block.name === 'record_unknown_question') {
     const parsed = UnknownInput.safeParse(block.input);
     if (!parsed.success) return result('Invalid question.', true);
-    if (await ctx.allowNotification()) {
-      await notifyAmit('Your twin got a question it could not answer', [parsed.data.question]);
-    }
-    return result('Logged for Amit.');
+    const ok =
+      (await ctx.allowNotification()) &&
+      (await notifyAmit('Your twin got a question it could not answer', [parsed.data.question]));
+    return ok
+      ? result('Emailed the question to Amit.', false, true)
+      : result(`The question was not forwarded. If they want an answer, ${fallback}`);
   }
 
   return result(`Unknown tool ${block.name}.`, true);

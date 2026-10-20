@@ -1,16 +1,20 @@
 /**
- * Sends Amit an email through Resend. Without RESEND_API_KEY (local dev, previews)
- * it logs instead, so the twin still works end to end.
+ * Emails Amit through Resend and returns whether the email actually went out.
+ * Without RESEND_API_KEY (local dev, or before Resend is set up) it only logs, and returns false,
+ * so the twin never tells a visitor something was sent when it wasn't.
  */
 const TO = 'asherproc@gmail.com';
+
+/** Whether the twin can actually email Amit. Without it, the forwarding tools are not offered at all. */
+export const canNotify = () => Boolean(import.meta.env.RESEND_API_KEY ?? process.env.RESEND_API_KEY);
 
 export async function notifyAmit(subject: string, lines: string[]): Promise<boolean> {
   const key = import.meta.env.RESEND_API_KEY ?? process.env.RESEND_API_KEY;
   const from = import.meta.env.TWIN_FROM_EMAIL ?? process.env.TWIN_FROM_EMAIL ?? 'Amit twin <onboarding@resend.dev>';
   const text = lines.join('\n');
   if (!key) {
-    console.info(`[twin notify] ${subject}\n${text}`);
-    return true;
+    console.info(`[twin notify] NOT EMAILED (no RESEND_API_KEY): ${subject}\n${text}`);
+    return false;
   }
   try {
     const res = await fetch('https://api.resend.com/emails', {
