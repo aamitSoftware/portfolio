@@ -39,6 +39,10 @@ const projects = defineCollection({
       cover: z.object({ src: image(), alt: z.string(), caption: z.string() }).optional(),
       /** Caption for the drawn diagram, used when there is no screenshot. */
       coverCaption: z.string().optional(),
+      /** A looping screen recording (files in /public), shown under "See it in action". */
+      reel: z
+        .object({ mp4: z.string(), webm: z.string(), poster: z.string(), label: z.string(), caption: z.string() })
+        .optional(),
       gallery: z.array(z.object({ src: image(), alt: z.string(), caption: z.string() })).default([]),
     }),
 });

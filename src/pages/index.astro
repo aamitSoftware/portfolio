@@ -10,26 +10,18 @@ import Twin from '../components/Twin.astro';
 import { getProjects } from '../lib/projects';
 import { site } from '../lib/site';
 import avatar from '../assets/me/amit-avatar.png';
-import hub from '../assets/projects/bubble-up/hub.png';
-import home from '../assets/projects/bubble-up/home.png';
-import experts from '../assets/projects/bubble-up/experts.png';
-import room from '../assets/projects/bubble-up/room.png';
-import calendar from '../assets/projects/bubble-up/hub-calendar.png';
-import academy from '../assets/projects/bubble-up/academy.png';
-
 // The twin needs an API key on the server; the flag keeps the chat hidden until one is configured.
 const twinEnabled = import.meta.env.PUBLIC_TWIN_ENABLED === 'true';
 const featured = await getProjects({ featuredOnly: true });
 const total = (await getProjects()).length;
 
-const reel = [
-  { src: home, label: 'Home feed', alt: "Bubble.up running: the home feed with a live session to join and recent activity across the student's study groups." },
-  { src: hub, label: 'Group hub', alt: '' },
-  { src: experts, label: 'Expert sessions', alt: '' },
-  { src: room, label: 'Live room', alt: '' },
-  { src: calendar, label: 'Group calendar', alt: '' },
-  { src: academy, label: 'Course catalog', alt: '' },
-];
+const reel = {
+  mp4: '/media/bubbleup-reel.mp4',
+  webm: '/media/bubbleup-reel.webm',
+  poster: '/media/bubbleup-reel-poster.jpg',
+  label:
+    "Screen recording of Bubble.up: the home feed, answering a matching check-in, a study group's chat with calendar and files, sending a message, then expert sessions and the course catalog.",
+};
 
 const portfolioUrl = Astro.site?.origin ?? '';
 const recruiterSummary = [
@@ -64,7 +56,7 @@ const recruiterSummary = [
 
     <div class="hero-show">
       <Reel
-        frames={reel}
+        video={reel}
         ink="c"
         caption="Bubble.up, live with 130+ students. Screens from the public demo."
         href="/work/bubble-up"

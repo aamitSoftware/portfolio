@@ -33,7 +33,7 @@ const caption = cover?.caption ?? (hasDiagram ? project.data.coverCaption : unde
           <Image
             src={cover.src}
             alt={cover.alt}
-            widths={[480, 800, 1280]}
+            widths={[640, 1280, 1920, 2560]}
             sizes={sizes}
             loading={eager ? 'eager' : 'lazy'}
             fetchpriority={eager ? 'high' : 'auto'}

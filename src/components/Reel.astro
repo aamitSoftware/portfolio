@@ -1,12 +1,12 @@
 ---
 /**
  * A looping reel of a real product, printed on its project's plate.
- * Frames crossfade with a slow camera drift. If `video` is set (a file in /public),
- * it plays instead, with the first frame as its poster.
+ * With `video` (files in /public), it plays a real screen recording of the product.
+ * Without it, still frames crossfade with a slow camera drift.
  * WCAG 2.2.2: anything that moves for more than 5 seconds gets a pause control,
  * and reduced-motion visitors get a still frame.
  */
-import { Image, getImage } from 'astro:assets';
+import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 
 interface Frame {
@@ -16,20 +16,19 @@ interface Frame {
 }
 
 interface Props {
-  frames: Frame[];
+  frames?: Frame[];
   ink: 'c' | 'm' | 'y';
   /** Seconds each frame is on screen. */
   hold?: number;
-  video?: string;
+  video?: { mp4: string; webm: string; poster: string; label: string };
   caption: string;
   href?: string;
 }
 
-const { frames, ink, hold = 3.6, video, caption, href } = Astro.props;
-const cycle = hold * frames.length;
-const poster = video ? (await getImage({ src: frames[0].src, width: 1280, format: 'webp' })).src : undefined;
+const { frames = [], ink, hold = 3.6, video, caption, href } = Astro.props;
+const cycle = hold * Math.max(1, frames.length);
 // Each frame owns 1/n of the cycle: fade in, hold, then fade out while the next frame fades in.
-const n = frames.length;
+const n = Math.max(1, frames.length);
 const slot = 100 / n;
 const fade = Math.min(4, slot / 4);
 const keyframes = `
@@ -58,7 +57,11 @@ const origins = ['20% 30%', '80% 20%', '50% 80%', '15% 70%', '85% 75%', '50% 40%
     <div class="screen">
       {
         video ? (
-          <video src={video} poster={poster} autoplay muted loop playsinline preload="none" aria-label={caption} />
+          // No autoplay attribute: the script starts it, so reduced-motion visitors get the poster and a Play button.
+          <video muted loop playsinline preload="metadata" poster={video.poster} aria-label={video.label} data-reel-video>
+            <source src={video.webm} type="video/webm" />
+            <source src={video.mp4} type="video/mp4" />
+          </video>
         ) : (
           frames.map((f, i) => (
             <div class="frame" style={`--i: ${i}; --origin: ${origins[i % origins.length]}`}>
@@ -93,6 +96,15 @@ const origins = ['20% 30%', '80% 20%', '50% 80%', '15% 70%', '85% 75%', '50% 40%
       reel.dataset.wired = '1';
       const btn = reel.querySelector('[data-reel-toggle]');
       const video = reel.querySelector('video');
+      if (video) {
+        reel.classList.add('has-video');
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          reel.classList.add('is-paused');
+          btn.setAttribute('aria-pressed', 'true');
+        } else {
+          video.play().catch(() => {});
+        }
+      }
       btn.addEventListener('click', () => {
         const paused = reel.classList.toggle('is-paused');
         btn.setAttribute('aria-pressed', String(paused));
@@ -211,8 +223,9 @@ const origins = ['20% 30%', '80% 20%', '50% 80%', '15% 70%', '85% 75%', '50% 40%
     display: inline;
   }
 
+  /* Crossfading stills simply stop for reduced motion; a video keeps its Play button so it stays opt-in. */
   @media (prefers-reduced-motion: reduce) {
-    .toggle {
+    .reel:not(.has-video) .toggle {
       display: none;
     }
   }

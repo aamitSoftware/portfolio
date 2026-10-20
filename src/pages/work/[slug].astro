@@ -7,6 +7,7 @@ import Plates from '../../components/Plates.astro';
 import RegMark from '../../components/RegMark.astro';
 import Flow from '../../components/Flow.astro';
 import Cover from '../../components/Cover.astro';
+import Reel from '../../components/Reel.astro';
 import { getProjects, isInRegister, statusLabel, type Project } from '../../lib/projects';
 import { formatDate, lastPushed } from '../../lib/github';
 import EmailActions from '../../components/EmailActions.astro';
@@ -130,13 +131,14 @@ const askUrl = gmailUrl(`About ${d.title}`);
 
   <section class="block" aria-labelledby="action-h">
     <h2 id="action-h">See it in action</h2>
+    {d.reel && <div class="cs-reel"><Reel video={d.reel} ink={d.ink} caption={d.reel.caption} /></div>}
     {
       d.gallery.length > 0 ? (
         <div class="gallery">
           {d.gallery.map((g) => (
             <figure>
               <div class="shot">
-                <Image src={g.src} alt={g.alt} widths={[480, 800, 1280]} sizes="(min-width: 64rem) 540px, 92vw" />
+                <Image src={g.src} alt={g.alt} widths={[640, 1080, 1600]} sizes="(min-width: 64rem) 540px, 92vw" />
               </div>
               <figcaption>{g.caption}</figcaption>
             </figure>
@@ -348,6 +350,10 @@ const askUrl = gmailUrl(`About ${d.title}`);
     margin: 0.5rem 0 0;
     color: var(--meta);
     font-size: 1rem;
+  }
+
+  .cs-reel {
+    margin-bottom: 2.5rem;
   }
 
   .gallery {
