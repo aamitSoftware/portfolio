@@ -6,27 +6,22 @@ import RegMark from '../components/RegMark.astro';
 import WorkIndex from '../components/WorkIndex.astro';
 import Reel from '../components/Reel.astro';
 import EmailActions from '../components/EmailActions.astro';
+import Twin from '../components/Twin.astro';
 import { getProjects } from '../lib/projects';
 import { site } from '../lib/site';
 import avatar from '../assets/me/amit-avatar.png';
-import hub from '../assets/projects/bubble-up/hub.png';
-import home from '../assets/projects/bubble-up/home.png';
-import experts from '../assets/projects/bubble-up/experts.png';
-import room from '../assets/projects/bubble-up/room.png';
-import calendar from '../assets/projects/bubble-up/hub-calendar.png';
-import academy from '../assets/projects/bubble-up/academy.png';
-
+// The twin needs an API key on the server; the flag keeps the chat hidden until one is configured.
+const twinEnabled = import.meta.env.PUBLIC_TWIN_ENABLED === 'true';
 const featured = await getProjects({ featuredOnly: true });
 const total = (await getProjects()).length;
 
-const reel = [
-  { src: home, label: 'Home feed', alt: "Bubble.up running: the home feed with a live session to join and recent activity across the student's study groups." },
-  { src: hub, label: 'Group hub', alt: '' },
-  { src: experts, label: 'Expert sessions', alt: '' },
-  { src: room, label: 'Live room', alt: '' },
-  { src: calendar, label: 'Group calendar', alt: '' },
-  { src: academy, label: 'Course catalog', alt: '' },
-];
+const reel = {
+  mp4: '/media/bubbleup-reel.mp4',
+  webm: '/media/bubbleup-reel.webm',
+  poster: '/media/bubbleup-reel-poster.jpg',
+  label:
+    "Screen recording of Bubble.up: answering a matching check-in, browsing the course catalog to CS101, searching its study groups for Recursion Club, joining it, and sending a first message in the group chat.",
+};
 
 const portfolioUrl = Astro.site?.origin ?? '';
 const recruiterSummary = [
@@ -61,9 +56,9 @@ const recruiterSummary = [
 
     <div class="hero-show">
       <Reel
-        frames={reel}
+        video={reel}
         ink="c"
-        caption="Bubble.up, live with 130+ students. Screens from the public demo."
+        caption="Bubble.up, live with 130+ students. Recorded in the public demo."
         href="/work/bubble-up"
       />
       <Image
@@ -124,6 +119,7 @@ const recruiterSummary = [
       <a href={site.linkedin}>LinkedIn</a>
       {site.cv && <a href={site.cv} download>CV (PDF)</a>}
     </div>
+    {twinEnabled && <Twin />}
   </section>
 
   <section id="work" class="section" aria-labelledby="work-h">
@@ -194,7 +190,7 @@ const recruiterSummary = [
 <style>
   .hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr);
     gap: 3rem clamp(2rem, 5vw, 5rem);
     align-items: center;
     padding-bottom: clamp(3rem, 8vw, 6rem);
@@ -244,9 +240,10 @@ const recruiterSummary = [
     padding-bottom: clamp(3rem, 8vw, 5rem);
   }
 
+  /* Bottom-right: the recording's own action (the matching check-in) happens bottom-left. */
   .hero-show :global(.avatar) {
     position: absolute;
-    left: clamp(-3rem, -3vw, -1rem);
+    right: clamp(-3rem, -3vw, -1rem);
     bottom: 0;
     width: clamp(8rem, 15vw, 15rem);
     height: auto;
@@ -255,7 +252,18 @@ const recruiterSummary = [
   }
 
   .hero-show :global(figcaption) {
-    padding-left: clamp(8rem, 13vw, 13rem);
+    padding-right: clamp(8rem, 13vw, 13rem);
+  }
+
+  /* The avatar covers the reel's usual bottom-right control spot, so Pause sits in the plate's top border,
+     off the product itself. */
+  .hero-show :global(.toggle) {
+    top: 0.2rem;
+    right: 0.5rem;
+    bottom: auto;
+    min-height: 1.6rem;
+    padding: 0 0.6rem;
+    font-size: 0.75rem;
   }
 
   /* Recruiter card: a solid key plate, reversed out. */

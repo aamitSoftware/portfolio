@@ -33,7 +33,7 @@ const caption = cover?.caption ?? (hasDiagram ? project.data.coverCaption : unde
           <Image
             src={cover.src}
             alt={cover.alt}
-            widths={[480, 800, 1280]}
+            widths={[640, 1280, 1920, 2560]}
             sizes={sizes}
             loading={eager ? 'eager' : 'lazy'}
             fetchpriority={eager ? 'high' : 'auto'}
@@ -44,7 +44,7 @@ const caption = cover?.caption ?? (hasDiagram ? project.data.coverCaption : unde
           <Diagram />
         </div>
       ) : (
-        <div class="soon">
+        <div class="print soon">
           <Plates lines={[project.data.title]} inRegister={false} drift={0.03} class="soon-title" />
           <p>Screens coming soon</p>
         </div>
@@ -95,11 +95,14 @@ const caption = cover?.caption ?? (hasDiagram ? project.data.coverCaption : unde
     --blend: multiply;
   }
 
+  /* The skeleton is a blank proof on paper stock, so it reads the same on an ink panel or over the page hero. */
   .soon {
     display: grid;
     place-content: center;
     gap: 0.75rem;
     aspect-ratio: 16 / 10;
+    padding: 1.5rem;
+    color: #000;
     text-align: center;
   }
 

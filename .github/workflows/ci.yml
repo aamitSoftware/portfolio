@@ -37,7 +37,7 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Smoke, accessibility (axe, WCAG 2.2 AA) and no-JS-bundle tests
+      - name: Smoke, accessibility (axe, WCAG 2.2 AA) and JS budget tests
         run: npm run test:e2e
 
       - name: Design detector (Impeccable)
@@ -51,12 +51,14 @@ jobs:
         with:
           args: >-
             --no-progress
+            --fallback-extensions html
+            --index-files index.html
             --exclude 'linkedin\.com'
             --exclude 'mail\.google\.com'
             --exclude '^mailto:'
             --exclude 'amitasher\.vercel\.app'
-            --root-dir ${{ github.workspace }}/dist
-            'dist/**/*.html'
+            --root-dir ${{ github.workspace }}/.vercel/output/static
+            '.vercel/output/static/**/*.html'
           fail: true
 
       - uses: actions/upload-artifact@v4

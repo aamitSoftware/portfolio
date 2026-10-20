@@ -1,0 +1,43 @@
+name: Twin evals
+
+# Runs the recruiter twin against its golden questions whenever its prompt, tools or knowledge change.
+# Needs the ANTHROPIC_API_KEY repository secret; without it the job skips itself.
+on:
+  pull_request:
+    paths:
+      - 'src/twin/**'
+      - 'src/pages/api/twin.ts'
+      - 'src/content/projects/**'
+      - 'scripts/twin-eval.mjs'
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      TWIN_PROVIDER: anthropic
+    steps:
+      - name: Skip without an API key
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "ANTHROPIC_API_KEY secret not set, skipping twin evals."
+
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+
+      - uses: actions/setup-node@v4
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          node-version: 24
+          cache: npm
+
+      - if: env.ANTHROPIC_API_KEY != ''
+        run: npm ci
+
+      - name: Start the dev server and run evals
+        if: env.ANTHROPIC_API_KEY != ''
+        run: |
+          npx astro dev --port 4321 &
+          npx --yes wait-on@8 http://localhost:4321 --timeout 120000
+          npm run eval:twin -- http://localhost:4321

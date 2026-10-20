@@ -1,0 +1,288 @@
+---
+/**
+ * "Ask my twin": a chat with Amit's AI twin, inside the recruiter card.
+ * Plain text rendering only (textContent), so nothing the model says can inject markup.
+ */
+const starters = [
+  'What did you build at Landa?',
+  "What's your strongest stack?",
+  'Tell me about Bubble.up',
+  'Is AgentGate finished?',
+];
+---
+
+<section class="twin" aria-labelledby="twin-h" data-twin>
+  <div class="twin-head">
+    <h3 id="twin-h">Ask my AI twin</h3>
+    <p>It answers from this site and passes anything it can't answer to me. It can get things wrong; I read every lead.</p>
+  </div>
+
+  <ol class="log" aria-live="polite" data-log></ol>
+
+  <div class="starters" data-starters>
+    {starters.map((q) => <button type="button" class="starter" data-q={q}>{q}</button>)}
+  </div>
+
+  <form class="ask" data-form>
+    <label class="sr-only" for="twin-input">Your question for Amit's twin</label>
+    <input
+      id="twin-input"
+      name="q"
+      type="text"
+      maxlength="800"
+      autocomplete="off"
+      placeholder="Ask about my work, stack or projects"
+      required
+    />
+    <button type="submit" class="send">Ask</button>
+  </form>
+</section>
+
+<script>
+  type Msg = { role: 'user' | 'assistant'; content: string };
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-twin]')) {
+    const log = root.querySelector<HTMLOListElement>('[data-log]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const input = form.querySelector<HTMLInputElement>('input')!;
+    const send = form.querySelector<HTMLButtonElement>('button')!;
+    const starters = root.querySelector<HTMLElement>('[data-starters]')!;
+    const history: Msg[] = [];
+    let busy = false;
+
+    const bubble = (role: 'user' | 'assistant' | 'note', text = '') => {
+      const li = document.createElement('li');
+      li.className = `msg msg-${role}`;
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = role === 'user' ? 'You' : role === 'note' ? '' : 'Twin';
+      const body = document.createElement('p');
+      body.textContent = text;
+      li.append(who, body);
+      log.append(li);
+      li.scrollIntoView({ block: 'nearest' });
+      return body;
+    };
+
+    // Models sometimes reach for Markdown; this card renders plain text, so strip the markers.
+    const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#+\s*/gm, '');
+
+    async function ask(question: string) {
+      if (busy || !question.trim()) return;
+      busy = true;
+      send.disabled = true;
+      starters.hidden = true;
+      bubble('user', question);
+      history.push({ role: 'user', content: question });
+      const out = bubble('assistant', '…');
+      let text = '';
+
+      try {
+        const res = await fetch('/api/twin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: history.slice(-12) }),
+        });
+        if (!res.ok || !res.body) {
+          const err = await res.json().catch(() => ({ error: 'Something went wrong.' }));
+          out.textContent = err.error ?? 'Something went wrong.';
+          history.pop();
+          return;
+        }
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        let buffer = '';
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += value;
+          const events = buffer.split('\n\n');
+          buffer = events.pop() ?? '';
+          for (const raw of events) {
+            const event = raw.match(/^event: (.+)$/m)?.[1];
+            const data = raw.match(/^data: (.+)$/m)?.[1];
+            if (!event || data === undefined) continue;
+            const payload = JSON.parse(data);
+            if (event === 'text') {
+              text += payload;
+              out.textContent = plain(text);
+            } else if (event === 'tool' && payload.delivered) {
+              // Only shown when an email really went out to Amit.
+              bubble(
+                'note',
+                payload.name === 'record_lead'
+                  ? "Emailed your details to Amit. He'll reply to you directly."
+                  : 'Emailed this question to Amit so he can answer it himself.',
+              );
+            } else if (event === 'error') {
+              out.textContent = payload;
+            }
+          }
+        }
+        if (text) history.push({ role: 'assistant', content: text });
+        else history.pop();
+      } catch {
+        out.textContent = "Couldn't reach the twin. Check your connection, or email Amit directly.";
+        history.pop();
+      } finally {
+        busy = false;
+        send.disabled = false;
+        input.focus();
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = input.value;
+      input.value = '';
+      ask(q);
+    });
+
+    starters.addEventListener('click', (e) => {
+      const q = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-q]')?.dataset.q;
+      if (q) ask(q);
+    });
+  }
+</script>
+
+<style>
+  .twin {
+    margin-top: 2.25rem;
+    padding-top: 1.75rem;
+    border-top: 2px solid var(--paper);
+  }
+
+  .twin-head h3 {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 800;
+    font-stretch: 112%;
+  }
+
+  .twin-head p {
+    margin: 0.4rem 0 0;
+    max-width: 60ch;
+    font-size: 0.9375rem;
+    opacity: 0.8;
+  }
+
+  .log {
+    display: grid;
+    gap: 0.9rem;
+    max-height: 26rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  .log:empty {
+    display: none;
+  }
+
+  .log :global(.msg) {
+    display: grid;
+    gap: 0.15rem;
+    max-width: 62ch;
+  }
+
+  .log :global(.msg p) {
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  .log :global(.who) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    opacity: 0.7;
+  }
+
+  .log :global(.msg-user) {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .log :global(.msg-user p) {
+    padding: 0.5rem 0.8rem;
+    background: color-mix(in oklab, var(--paper) 14%, var(--ink));
+    border-radius: 2px;
+  }
+
+  .log :global(.msg-note p) {
+    font-size: 0.8125rem;
+    opacity: 0.75;
+  }
+
+  .starters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .starters[hidden] {
+    display: none;
+  }
+
+  .starter {
+    min-height: 2.5rem;
+    padding: 0.35rem 0.85rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid color-mix(in oklab, var(--paper) 45%, var(--ink));
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.9375rem;
+    cursor: pointer;
+  }
+
+  .starter:hover {
+    border-color: var(--paper);
+  }
+
+  .ask {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .ask input {
+    flex: 1;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.85rem;
+    background: color-mix(in oklab, var(--paper) 10%, var(--ink));
+    color: var(--paper);
+    border: 1px solid color-mix(in oklab, var(--paper) 45%, var(--ink));
+    border-radius: 2px;
+    font: inherit;
+    font-size: 1rem;
+    caret-color: var(--plate-y);
+  }
+
+  .ask input::placeholder {
+    color: color-mix(in oklab, var(--paper) 65%, var(--ink));
+  }
+
+  .ask input:focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 2px;
+  }
+
+  .send {
+    min-height: 2.75rem;
+    padding: 0 1.25rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 0;
+    border-radius: 2px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .send:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+</style>

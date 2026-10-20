@@ -31,6 +31,18 @@
       "skillPath": "skills/core-web-vitals/SKILL.md",
       "computedHash": "ceaa3e9c9dfa6209ffe923714c0a093b950d0922213d0cf375c27f3d602cc857"
     },
+    "demo-video": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "skillPath": "engineering/demo-video/skills/demo-video/SKILL.md",
+      "computedHash": "afb7ba83e19c41c812c16a8e8d4fdb74f5f67c94dd2954690d92884cfa91c9c8"
+    },
+    "full-page-screenshot": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "skillPath": "engineering/skills/full-page-screenshot/SKILL.md",
+      "computedHash": "971788e06dc77b75ad2444d949529a2c48e72b1fe0ad428926e91de3032f8c72"
+    },
     "motion-framer": {
       "source": "freshtechbro/claudedesignskills",
       "sourceType": "github",
