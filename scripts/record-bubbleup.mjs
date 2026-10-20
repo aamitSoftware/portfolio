@@ -63,16 +63,20 @@ async function openDemo(browser, withCursor) {
   return { ctx, page };
 }
 
-const hideCheckIn = (page) =>
+// The matching quiz pops up on every screen. After the reel answers it once, keep it out of the way.
+const suppressCheckIn = (page) =>
   page.evaluate(() => {
-    for (const el of document.querySelectorAll('body *')) {
-      if (el.children.length < 12 && /^QUICK CHECK-IN/i.test(el.textContent?.trim() ?? '')) {
-        let box = el;
-        while (box.parentElement && box.getBoundingClientRect().width < 300) box = box.parentElement;
-        box.style.visibility = 'hidden';
-        return;
+    const hide = () => {
+      for (const el of document.querySelectorAll('body *')) {
+        if (el.children.length < 12 && /^QUICK CHECK-IN/i.test(el.textContent?.trim() ?? '')) {
+          let box = el;
+          while (box.parentElement && box.getBoundingClientRect().width < 300) box = box.parentElement;
+          box.style.visibility = 'hidden';
+        }
       }
-    }
+    };
+    hide();
+    new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
   });
 
 const openHub = async (page) => {
@@ -82,30 +86,20 @@ const openHub = async (page) => {
 
 async function shootStills(browser) {
   const { ctx, page } = await openDemo(browser, false);
-  await hideCheckIn(page);
-  await page.screenshot({ path: join(STILLS, 'home.png') });
+  await suppressCheckIn(page);
   await openHub(page);
-  await hideCheckIn(page);
   await page.screenshot({ path: join(STILLS, 'hub.png') });
-  for (const [name, path] of [
-    ['experts', '/experts'],
-    ['academy', '/academy'],
-  ]) {
-    await page.goto(new URL(path, page.url()).href, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1500);
-    await hideCheckIn(page);
-    await page.screenshot({ path: join(STILLS, `${name}.png`) });
-  }
   await ctx.close();
   console.log('stills saved to', STILLS);
 }
 
 /** Moves the pointer in visible steps and clicks, so the cursor travels like a person's hand. */
-async function point(page, locator, { click = true } = {}) {
+async function point(page, locator, { click = true, steps = 22 } = {}) {
+  await locator.scrollIntoViewIfNeeded().catch(() => {});
   const box = await locator.boundingBox();
   if (!box) throw new Error('target not visible');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 22 });
-  await page.waitForTimeout(250);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps });
+  await page.waitForTimeout(220);
   if (click) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
@@ -125,17 +119,9 @@ async function recordReel(browser) {
   });
   await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: 2880, maxHeight: 1800 });
 
-  // 1. Home feed: what's live, what's coming up, then scroll to the matched Bubbles.
-  await page.waitForTimeout(1600);
-  await page.mouse.move(700, 500, { steps: 15 });
-  for (let i = 0; i < 14; i++) {
-    await page.mouse.wheel(0, 60);
-    await page.waitForTimeout(45);
-  }
-  await page.waitForTimeout(1200);
-
-  // 2. The matching quiz: answer one quick check-in.
-  // Its questions are random, so pick the first answer inside the check-in card rather than matching text.
+  // 1. Home, then the matching quiz: answer one quick check-in.
+  //    Its questions are random, so pick the first answer inside the card rather than matching text.
+  await page.waitForTimeout(1400);
   const option = page
     .getByText(/quick check-in/i)
     .first()
@@ -144,29 +130,46 @@ async function recordReel(browser) {
     .first();
   if (await option.isVisible().catch(() => false)) {
     await point(page, option);
-    await page.waitForTimeout(1400);
+    await page.waitForTimeout(1300);
   }
+  await suppressCheckIn(page);
 
-  // 3. Into the group: chat, members, calendar, files.
-  await point(page, page.locator('button', { hasText: 'CS101 Night Owls' }).last());
-  await page.waitForTimeout(2200);
-  await hideCheckIn(page);
+  // 2. Browse the catalog: Academy, a department, a course.
+  await point(page, page.getByRole('link', { name: 'Academy' }));
+  await page.waitForTimeout(1300);
+  await point(page, page.getByRole('button', { name: /Science Department/ }));
+  await page.waitForTimeout(800);
+  await point(page, page.getByRole('button', { name: /Introduction to Computer Science/ }).last());
+  await page.waitForTimeout(900);
+  await point(page, page.getByRole('button', { name: /Open course/ }).last());
+  await page.waitForURL(/\/courses\//, { timeout: 20000 });
+  await page.waitForTimeout(1500);
 
-  // 4. Send a chat message; it lands over WebSocket.
+  // 3. Look up a study group for that course.
+  const search = page.getByPlaceholder('Search by name');
+  await point(page, search);
+  await page.keyboard.type('Recursion', { delay: 95 });
+  await page.waitForTimeout(1100);
+
+  // 4. Join it and open it.
+  const card = page.locator('div', { hasText: 'Recursion Club' });
+  await point(page, card.getByRole('button', { name: 'Join' }).last());
+  await page.waitForTimeout(1300);
+  await point(page, page.getByRole('button', { name: /Open in My Bubbles/ }).first());
+  await page.waitForTimeout(1600);
+  // It lands back on Home with the new Bubble in the sidebar; open it from there.
+  await point(page, page.locator('button', { hasText: 'Recursion Club' }).last());
+  await page.waitForTimeout(2400);
+
+  // 5. Say hi to the new group; the message lands over WebSocket.
   const box = page.getByRole('textbox').last();
   if (await box.isVisible().catch(() => false)) {
     await point(page, box);
-    await page.keyboard.type("Whiteboard session at 9? I'll bring the recursion problems", { delay: 38 });
-    await page.waitForTimeout(400);
+    await page.keyboard.type('Hey Recursion Club! Anyone up for a whiteboard session tonight?', { delay: 36 });
+    await page.waitForTimeout(350);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1800);
+    await page.waitForTimeout(2600);
   }
-
-  // 5. Expert sessions, then the course catalog.
-  await point(page, page.getByRole('link', { name: 'Experts' }));
-  await page.waitForTimeout(2300);
-  await point(page, page.getByRole('link', { name: 'Academy' }));
-  await page.waitForTimeout(2300);
 
   await cdp.send('Page.stopScreencast');
   await ctx.close();

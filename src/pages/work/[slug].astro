@@ -81,7 +81,14 @@ const askUrl = gmailUrl(`About ${d.title}`);
   </header>
 
   <div class="hero-cover">
-    <Cover project={project} sizes="(min-width: 78rem) 1100px, 92vw" eager />
+    {
+      // A project with a screen recording leads with it; one picture of the product, not a stack of them.
+      d.reel ? (
+        <Reel video={d.reel} ink={d.ink} caption={d.reel.caption} />
+      ) : (
+        <Cover project={project} sizes="(min-width: 78rem) 1100px, 92vw" eager />
+      )
+    }
   </div>
 
   <dl class="facts">
@@ -129,9 +136,11 @@ const askUrl = gmailUrl(`About ${d.title}`);
     )
   }
 
+  {
+    /* With a recording up top, the gallery only appears if a project adds extra screens on purpose. */
+    (!d.reel || d.gallery.length > 0) && (
   <section class="block" aria-labelledby="action-h">
     <h2 id="action-h">See it in action</h2>
-    {d.reel && <div class="cs-reel"><Reel video={d.reel} ink={d.ink} caption={d.reel.caption} /></div>}
     {
       d.gallery.length > 0 ? (
         <div class="gallery">
@@ -156,6 +165,8 @@ const askUrl = gmailUrl(`About ${d.title}`);
       )
     }
   </section>
+    )
+  }
 
   <section class="block under" aria-labelledby="hood-h">
     <h2 id="hood-h">Under the hood</h2>
@@ -350,10 +361,6 @@ const askUrl = gmailUrl(`About ${d.title}`);
     margin: 0.5rem 0 0;
     color: var(--meta);
     font-size: 1rem;
-  }
-
-  .cs-reel {
-    margin-bottom: 2.5rem;
   }
 
   .gallery {
